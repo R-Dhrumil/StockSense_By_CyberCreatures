@@ -27,7 +27,8 @@ import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import KpiCard from '../components/common/KpiCard';
-
+import { hasPermission } from '../utils/permissions';
+import { productApi, operationApi } from '../services/api';
 import { matchesWarehouse, DEFAULT_WAREHOUSES } from '../utils/warehouseUtils';
 
 export default function SalesOrders({
