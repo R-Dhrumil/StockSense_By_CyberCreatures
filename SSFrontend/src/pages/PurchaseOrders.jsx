@@ -19,8 +19,11 @@ import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import Drawer from '../components/common/Drawer';
 import { INITIAL_PURCHASE_ORDERS, INITIAL_SUPPLIERS, INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
+import { hasPermission } from '../utils/permissions';
 
-export default function PurchaseOrders({ onNotify, products, setProducts }) {
+export default function PurchaseOrders({ onNotify, products, setProducts, currentUser }) {
+  const canCreateReceipts = hasPermission.canCreateReceipts(currentUser?.role);
+  const canValidateReceipts = hasPermission.canValidateReceipts(currentUser?.role);
   const location = useLocation();
   const [orders, setOrders] = useState(INITIAL_PURCHASE_ORDERS);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -232,7 +235,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
       sortable: false,
       render: (row) => (
         <div style={{ display: 'flex', gap: '6px' }}>
-          {(row.status === 'Ordered' || row.status === 'Partially Received') && (
+          {canValidateReceipts && (row.status === 'Ordered' || row.status === 'Partially Received') && (
             <button
               type="button"
               className="btn btn-primary btn-xs"
@@ -267,6 +270,25 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
 
   return (
     <div className="purchase-orders-page animate-fade-in">
+      {/* Read-Only Notice for Staff */}
+      {!canCreateReceipts && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 16px',
+          background: 'var(--color-neutral-100)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-neutral-700)',
+          borderLeft: '4px solid var(--color-neutral-400)'
+        }}>
+          <ShoppingCart size={16} style={{ color: 'var(--color-neutral-600)', flexShrink: 0 }} />
+          <span><strong>Inbound Tracking:</strong> Warehouse Staff profile has viewing access to purchase orders and expected shipment schedules. Creating and approving new POs is managed by Inventory Managers and Admins.</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left">
@@ -282,14 +304,20 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
         </div>
 
         <div className="page-header-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleOpenCreate}
-          >
-            <Plus size={16} />
-            <span>Create Purchase Order</span>
-          </button>
+          {canCreateReceipts ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleOpenCreate}
+            >
+              <Plus size={16} />
+              <span>Create Purchase Order</span>
+            </button>
+          ) : (
+            <span className="badge badge-neutral" style={{ padding: '6px 12px', fontSize: '12px' }}>
+              Read-Only Access
+            </span>
+          )}
         </div>
       </div>
 

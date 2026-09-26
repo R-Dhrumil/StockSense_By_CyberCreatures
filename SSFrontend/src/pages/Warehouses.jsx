@@ -19,8 +19,10 @@ import {
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
 import { INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
+import { hasPermission } from '../utils/permissions';
 
-export default function Warehouses({ onNotify }) {
+export default function Warehouses({ onNotify, currentUser }) {
+  const canManageWarehouses = hasPermission.canManageWarehouses(currentUser?.role);
   const [warehouses, setWarehouses] = useState(INITIAL_WAREHOUSES);
   const [viewMode, setViewMode] = useState('grid');
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
@@ -74,6 +76,25 @@ export default function Warehouses({ onNotify }) {
 
   return (
     <div className="warehouses-page animate-fade-in">
+      {/* Admin Notice for Non-Admins */}
+      {!canManageWarehouses && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 16px',
+          background: 'var(--color-neutral-100)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-neutral-700)',
+          borderLeft: '4px solid var(--color-neutral-400)'
+        }}>
+          <WarehouseIcon size={16} style={{ color: 'var(--color-neutral-600)', flexShrink: 0 }} />
+          <span><strong>Facility Telemetry:</strong> Facility configuration and warehouse provisioning is managed by System Administrators. Operational stock allocation across hubs remains active.</span>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="page-header">
         <div className="page-header-left">
@@ -89,14 +110,20 @@ export default function Warehouses({ onNotify }) {
         </div>
 
         <div className="page-header-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleOpenAdd}
-          >
-            <Plus size={16} />
-            <span>Add Facility</span>
-          </button>
+          {canManageWarehouses ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleOpenAdd}
+            >
+              <Plus size={16} />
+              <span>Add Facility</span>
+            </button>
+          ) : (
+            <span className="badge badge-neutral" style={{ padding: '6px 12px', fontSize: '12px' }}>
+              Read-Only Facilities
+            </span>
+          )}
         </div>
       </div>
 

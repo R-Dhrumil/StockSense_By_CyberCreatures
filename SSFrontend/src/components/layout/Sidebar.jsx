@@ -14,42 +14,44 @@ import {
   Users,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import logoDarkSvg from '../../assets/logo-dark.svg';
 import faviconSvg from '../../assets/fevicon.svg';
+import { normalizeRole, ROLE_LABELS } from '../../utils/permissions';
 
-const NAV_GROUPS = [
+const ALL_NAV_GROUPS = [
   {
     title: 'Overview',
     items: [
-      { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard }
+      { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'INVENTORY_MANAGER', 'STAFF'] }
     ]
   },
   {
     title: 'Inventory & Catalog',
     items: [
-      { name: 'Products', path: '/products', icon: Package },
-      { name: 'Categories', path: '/categories', icon: Layers },
-      { name: 'Inventory', path: '/inventory', icon: Boxes },
-      { name: 'Stock Movements', path: '/movements', icon: ArrowLeftRight }
+      { name: 'Products', path: '/products', icon: Package, roles: ['ADMIN', 'INVENTORY_MANAGER', 'STAFF'] },
+      { name: 'Categories', path: '/categories', icon: Layers, roles: ['ADMIN', 'INVENTORY_MANAGER', 'STAFF'] },
+      { name: 'Inventory', path: '/inventory', icon: Boxes, roles: ['ADMIN', 'INVENTORY_MANAGER', 'STAFF'] },
+      { name: 'Stock Movements', path: '/movements', icon: ArrowLeftRight, roles: ['ADMIN', 'INVENTORY_MANAGER', 'STAFF'] }
     ]
   },
   {
     title: 'Fulfillment & Logistics',
     items: [
-      { name: 'Warehouses', path: '/warehouses', icon: Warehouse },
-      { name: 'Suppliers', path: '/suppliers', icon: Truck },
-      { name: 'Purchase Orders', path: '/purchase-orders', icon: ShoppingCart },
-      { name: 'Sales Orders', path: '/sales-orders', icon: TrendingUp }
+      { name: 'Warehouses', path: '/warehouses', icon: Warehouse, roles: ['ADMIN', 'INVENTORY_MANAGER'] },
+      { name: 'Suppliers', path: '/suppliers', icon: Truck, roles: ['ADMIN', 'INVENTORY_MANAGER'] },
+      { name: 'Purchase Orders', path: '/purchase-orders', icon: ShoppingCart, roles: ['ADMIN', 'INVENTORY_MANAGER', 'STAFF'] },
+      { name: 'Sales Orders', path: '/sales-orders', icon: TrendingUp, roles: ['ADMIN', 'INVENTORY_MANAGER', 'STAFF'] }
     ]
   },
   {
     title: 'Intelligence & Admin',
     items: [
-      { name: 'Reports & Analytics', path: '/reports', icon: BarChart3 },
-      { name: 'Users & Roles', path: '/users', icon: Users },
-      { name: 'Settings', path: '/settings', icon: Settings }
+      { name: 'Reports & Analytics', path: '/reports', icon: BarChart3, roles: ['ADMIN', 'INVENTORY_MANAGER'] },
+      { name: 'Users & Roles', path: '/users', icon: Users, roles: ['ADMIN'] },
+      { name: 'Settings', path: '/settings', icon: Settings, roles: ['ADMIN'] }
     ]
   }
 ];
@@ -59,9 +61,16 @@ export default function Sidebar({
   onToggleCollapse,
   mobileOpen,
   onCloseMobile,
-  lowStockCount = 0
+  lowStockCount = 0,
+  currentUser
 }) {
   const navigate = useNavigate();
+  const currentRole = normalizeRole(currentUser?.role);
+
+  const visibleNavGroups = ALL_NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => item.roles.includes(currentRole))
+  })).filter(group => group.items.length > 0);
   return (
     <>
       {/* Mobile overlay */}
@@ -102,7 +111,7 @@ export default function Sidebar({
 
         {/* Navigation Items */}
         <nav className="sidebar-nav" aria-label="Main Navigation">
-          {NAV_GROUPS.map((group, gIdx) => (
+          {visibleNavGroups.map((group, gIdx) => (
             <div key={gIdx} className="sidebar-group">
               <div className="sidebar-group-title">{group.title}</div>
               {group.items.map((item) => {
@@ -144,19 +153,27 @@ export default function Sidebar({
           ))}
         </nav>
 
-        {/* Sidebar Footer */}
+        {/* Sidebar Footer with Role Badge */}
         <div className="sidebar-footer">
-          <img 
-            src={faviconSvg} 
-            alt="StockSense" 
-            style={{ width: 28, height: 28, objectFit: 'contain', flexShrink: 0 }}
-          />
+          <div style={{
+            width: 28,
+            height: 28,
+            borderRadius: 'var(--radius-md)',
+            background: currentRole === 'ADMIN' ? 'rgba(59, 130, 246, 0.2)' : (currentRole === 'INVENTORY_MANAGER' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'),
+            color: currentRole === 'ADMIN' ? '#60A5FA' : (currentRole === 'INVENTORY_MANAGER' ? '#FBBF24' : '#34D399'),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            {currentRole === 'ADMIN' ? <Shield size={16} /> : (currentRole === 'INVENTORY_MANAGER' ? <Package size={16} /> : <Truck size={16} />)}
+          </div>
           <div className="sidebar-footer-info" style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-neutral-200)', whiteSpace: 'nowrap' }}>
-              StockSense v2.4
+              {ROLE_LABELS[currentRole] || 'User'}
             </div>
             <div style={{ fontSize: '10px', color: 'var(--color-neutral-400)', whiteSpace: 'nowrap' }}>
-              Connected: 4 Hubs
+              {currentRole === 'ADMIN' ? 'Full System Access' : (currentRole === 'INVENTORY_MANAGER' ? 'Stock & Operations' : 'Transfers & Counting')}
             </div>
           </div>
         </div>

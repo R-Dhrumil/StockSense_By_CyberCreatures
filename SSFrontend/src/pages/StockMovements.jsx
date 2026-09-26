@@ -17,8 +17,10 @@ import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import { INITIAL_STOCK_MOVEMENTS } from '../data/mockData';
+import { normalizeRole } from '../utils/permissions';
 
-export default function StockMovements({ onNotify }) {
+export default function StockMovements({ onNotify, currentUser }) {
+  const currentRole = normalizeRole(currentUser?.role);
   const [movements, setMovements] = useState(INITIAL_STOCK_MOVEMENTS);
   const [selectedMovement, setSelectedMovement] = useState(null);
 

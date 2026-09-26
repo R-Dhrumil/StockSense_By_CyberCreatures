@@ -166,6 +166,7 @@ export default function App() {
         mobileOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
         lowStockCount={lowStockCount}
+        currentUser={currentUser}
       />
 
       {/* Main Content Layout Wrapper */}
@@ -207,12 +208,13 @@ export default function App() {
                   products={products}
                   setProducts={setProducts}
                   onNotify={addToast}
+                  currentUser={currentUser}
                 />
               }
             />
             <Route
               path="/categories"
-              element={<Categories onNotify={addToast} />}
+              element={<Categories onNotify={addToast} currentUser={currentUser} />}
             />
             <Route
               path="/inventory"
@@ -222,16 +224,17 @@ export default function App() {
                   setProducts={setProducts}
                   onNotify={addToast}
                   activeWarehouse={activeWarehouse}
+                  currentUser={currentUser}
                 />
               }
             />
             <Route
               path="/warehouses"
-              element={<Warehouses onNotify={addToast} />}
+              element={<Warehouses onNotify={addToast} currentUser={currentUser} />}
             />
             <Route
               path="/suppliers"
-              element={<Suppliers onNotify={addToast} />}
+              element={<Suppliers onNotify={addToast} currentUser={currentUser} />}
             />
             <Route
               path="/purchase-orders"
@@ -240,28 +243,29 @@ export default function App() {
                   onNotify={addToast}
                   products={products}
                   setProducts={setProducts}
+                  currentUser={currentUser}
                 />
               }
             />
             <Route
               path="/sales-orders"
-              element={<SalesOrders onNotify={addToast} />}
+              element={<SalesOrders onNotify={addToast} currentUser={currentUser} />}
             />
             <Route
               path="/movements"
-              element={<StockMovements onNotify={addToast} />}
+              element={<StockMovements onNotify={addToast} currentUser={currentUser} />}
             />
             <Route
               path="/reports"
-              element={<Reports onNotify={addToast} />}
+              element={<Reports onNotify={addToast} currentUser={currentUser} />}
             />
             <Route
               path="/users"
-              element={<UsersManagement onNotify={addToast} />}
+              element={<UsersManagement onNotify={addToast} currentUser={currentUser} />}
             />
             <Route
               path="/settings"
-              element={<Settings onNotify={addToast} />}
+              element={<Settings onNotify={addToast} currentUser={currentUser} />}
             />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

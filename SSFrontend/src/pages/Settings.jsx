@@ -10,10 +10,15 @@ import {
   Save,
   RotateCcw,
   Sliders,
-  Shield
+  Shield,
+  AlertTriangle
 } from 'lucide-react';
+import { hasPermission } from '../utils/permissions';
+import { useNavigate } from 'react-router-dom';
 
-export default function Settings({ onNotify }) {
+export default function Settings({ onNotify, currentUser }) {
+  const navigate = useNavigate();
+  const canManageSettings = hasPermission.canManageSettings(currentUser?.role);
   const [activeTab, setActiveTab] = useState('company');
 
   // Company Profile State
@@ -63,6 +68,28 @@ export default function Settings({ onNotify }) {
     autoDraftReplenishPo: true,
     safetyStockMultiplier: 1.25
   });
+
+  if (!canManageSettings) {
+    return (
+      <div className="card text-center" style={{ maxWidth: '500px', margin: '60px auto', padding: '40px 24px' }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--color-warning-50)', color: 'var(--color-warning-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <AlertTriangle size={28} />
+        </div>
+        <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Admin Settings Only</h2>
+        <p style={{ fontSize: '14px', color: 'var(--color-neutral-600)', marginBottom: '24px', lineHeight: 1.5 }}>
+          Enterprise settings, base currency configuration, and financial parameters can only be modified by <strong>System Administrators</strong>.
+        </p>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => navigate('/dashboard')}
+          style={{ margin: '0 auto' }}
+        >
+          Return to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   const handleSaveAll = (e) => {
     e.preventDefault();

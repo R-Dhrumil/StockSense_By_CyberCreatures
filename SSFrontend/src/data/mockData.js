@@ -618,9 +618,9 @@ export const INITIAL_USERS = [
     id: 'USR-05',
     name: 'Julian Sterling',
     email: 'j.sterling@cybercreatures.com',
-    role: 'Viewer',
-    department: 'Financial Auditing',
-    location: 'Remote',
+    role: 'Warehouse Staff',
+    department: 'Inbound Receiving',
+    location: 'Oakland, CA',
     status: 'Active',
     lastActive: 'Yesterday',
     avatar: 'JS'
@@ -639,14 +639,15 @@ export const INITIAL_USERS = [
 ];
 
 export const ROLE_PERMISSIONS_MATRIX = [
-  { module: 'Products Catalog', admin: 'Full Control', manager: 'Create / Edit / Archive', staff: 'View Only', viewer: 'View Only' },
-  { module: 'Inventory Stock Levels', admin: 'Full Control', manager: 'Adjust & Transfer', staff: 'Adjust with approval', viewer: 'View Only' },
-  { module: 'Purchase Orders', admin: 'Full Control', manager: 'Create, Approve, Receive', staff: 'Receive Goods Only', viewer: 'View Only' },
-  { module: 'Sales Orders & Dispatch', admin: 'Full Control', manager: 'Allocate & Dispatch', staff: 'Pick & Pack Only', viewer: 'View Only' },
-  { module: 'Stock Movement Audit Logs', admin: 'Full Control + Purge', manager: 'View & Export', staff: 'View Only', viewer: 'View Only' },
-  { module: 'Financial & Valuation Reports', admin: 'Full Control', manager: 'View & Export', staff: 'No Access', viewer: 'View Only' },
-  { module: 'Users & Permissions Settings', admin: 'Full Control', manager: 'No Access', staff: 'No Access', viewer: 'No Access' },
-  { module: 'System & Tax Preferences', admin: 'Full Control', manager: 'View Only', staff: 'No Access', viewer: 'No Access' }
+  { module: 'Manage Users & Warehouses (Settings)', admin: 'Full Control', manager: 'No Access', staff: 'No Access' },
+  { module: 'Create & Edit Products Catalog', admin: 'Full Control', manager: 'Full Control', staff: 'View Only' },
+  { module: 'Create & Validate Receipts (POs)', admin: 'Full Control', manager: 'Full Control', staff: 'View Only' },
+  { module: 'Create & Validate Deliveries (SOs)', admin: 'Full Control', manager: 'Full Control', staff: 'Pick & Pack Only' },
+  { module: 'Create & Validate Internal Transfers', admin: 'Full Control', manager: 'Full Control', staff: 'Create & Execute' },
+  { module: 'Enter Stock Adjustment Counts', admin: 'Full Control', manager: 'Validate & Approve', staff: 'Count Entry Only' },
+  { module: 'Live Dashboard Telemetry', admin: 'Full Access', manager: 'Full Access', staff: 'Read-Only' },
+  { module: 'Stock Movement Audit Ledger', admin: 'Full Control + Purge', manager: 'Full Access', staff: 'View Own Moves' },
+  { module: 'Financial & Valuation Reports', admin: 'Full Control', manager: 'View & Export', staff: 'No Access' }
 ];
 
 export const DASHBOARD_TREND_DATA = [

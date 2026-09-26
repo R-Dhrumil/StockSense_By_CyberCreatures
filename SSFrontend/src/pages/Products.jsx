@@ -32,6 +32,7 @@ import Modal from '../components/common/Modal';
 import Drawer from '../components/common/Drawer';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_WAREHOUSES, INITIAL_SUPPLIERS } from '../data/mockData';
 import { productApi, categoryApi } from '../services/api';
+import { hasPermission, normalizeRole } from '../utils/permissions';
 
 const PRODUCT_ICONS = [
   { key: 'Package', icon: Package, label: 'General / Package' },
@@ -59,7 +60,8 @@ const renderProductIcon = (iconKey) => {
   return <Comp size={16} />;
 };
 
-export default function Products({ products, setProducts, onNotify }) {
+export default function Products({ products, setProducts, onNotify, currentUser }) {
+  const canManageProducts = hasPermission.canManageProducts(currentUser?.role);
   const location = useLocation();
   const [selectedRows, setSelectedRows] = useState([]);
   const [stockStatusFilter, setStockStatusFilter] = useState('ALL'); // 'ALL' | 'LOW' | 'IN_STOCK' | 'OUT_OF_STOCK'
@@ -336,23 +338,27 @@ export default function Products({ products, setProducts, onNotify }) {
           >
             <Eye size={16} />
           </button>
-          <button
-            type="button"
-            className="action-menu-btn"
-            onClick={(e) => handleOpenEdit(row, e)}
-            title="Edit product"
-          >
-            <Edit2 size={15} />
-          </button>
-          <button
-            type="button"
-            className="action-menu-btn"
-            onClick={(e) => handleDeleteProduct(row, e)}
-            title="Delete product"
-            style={{ color: 'var(--color-danger-500)' }}
-          >
-            <Trash2 size={15} />
-          </button>
+          {canManageProducts && (
+            <>
+              <button
+                type="button"
+                className="action-menu-btn"
+                onClick={(e) => handleOpenEdit(row, e)}
+                title="Edit product"
+              >
+                <Edit2 size={15} />
+              </button>
+              <button
+                type="button"
+                className="action-menu-btn"
+                onClick={(e) => handleDeleteProduct(row, e)}
+                title="Delete product"
+                style={{ color: 'var(--color-danger-500)' }}
+              >
+                <Trash2 size={15} />
+              </button>
+            </>
+          )}
         </div>
       )
     }
@@ -392,6 +398,25 @@ export default function Products({ products, setProducts, onNotify }) {
 
   return (
     <div className="products-page animate-fade-in">
+      {/* Read-Only Notice for Staff */}
+      {!canManageProducts && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 16px',
+          background: 'var(--color-neutral-100)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-neutral-700)',
+          borderLeft: '4px solid var(--color-neutral-400)'
+        }}>
+          <Eye size={16} style={{ color: 'var(--color-neutral-600)', flexShrink: 0 }} />
+          <span><strong>Read-Only Mode:</strong> Warehouse Staff profile has viewing access to product specifications, barcodes, and stock levels. Product creation and modification is managed by Inventory Managers and Admins.</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left">
@@ -407,23 +432,31 @@ export default function Products({ products, setProducts, onNotify }) {
         </div>
 
         <div className="page-header-actions">
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => onNotify('Import CSV', 'Bulk CSV template downloaded. Ready for CSV batch import.', 'info')}
-          >
-            <Upload size={15} />
-            <span>Import CSV</span>
-          </button>
+          {canManageProducts ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => onNotify('Import CSV', 'Bulk CSV template downloaded. Ready for CSV batch import.', 'info')}
+              >
+                <Upload size={15} />
+                <span>Import CSV</span>
+              </button>
 
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleOpenCreate}
-          >
-            <Plus size={16} />
-            <span>Add New Product</span>
-          </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleOpenCreate}
+              >
+                <Plus size={16} />
+                <span>Add New Product</span>
+              </button>
+            </>
+          ) : (
+            <span className="badge badge-neutral" style={{ padding: '6px 12px', fontSize: '12px' }}>
+              Read-Only Access
+            </span>
+          )}
         </div>
       </div>
 

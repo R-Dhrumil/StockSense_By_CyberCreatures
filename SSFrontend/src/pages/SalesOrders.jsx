@@ -18,8 +18,10 @@ import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import { INITIAL_SALES_ORDERS, INITIAL_PRODUCTS } from '../data/mockData';
+import { hasPermission } from '../utils/permissions';
 
-export default function SalesOrders({ onNotify }) {
+export default function SalesOrders({ onNotify, currentUser }) {
+  const canCreateDeliveries = hasPermission.canCreateDeliveries(currentUser?.role);
   const location = useLocation();
   const [orders, setOrders] = useState(INITIAL_SALES_ORDERS);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -231,6 +233,25 @@ export default function SalesOrders({ onNotify }) {
 
   return (
     <div className="sales-orders-page animate-fade-in">
+      {/* Read-Only / Pick-Pack Notice for Staff */}
+      {!canCreateDeliveries && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 16px',
+          background: 'var(--color-neutral-100)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-neutral-700)',
+          borderLeft: '4px solid var(--color-neutral-400)'
+        }}>
+          <Package size={16} style={{ color: 'var(--color-neutral-600)', flexShrink: 0 }} />
+          <span><strong>Fulfillment Execution:</strong> Warehouse Staff profile can perform picking, packing, and dispatch execution on allocated orders. Creating new sales orders is managed by Inventory Managers and Admins.</span>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="page-header">
         <div className="page-header-left">
@@ -246,14 +267,20 @@ export default function SalesOrders({ onNotify }) {
         </div>
 
         <div className="page-header-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus size={16} />
-            <span>New Sales Order</span>
-          </button>
+          {canCreateDeliveries ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus size={16} />
+              <span>New Sales Order</span>
+            </button>
+          ) : (
+            <span className="badge badge-neutral" style={{ padding: '6px 12px', fontSize: '12px' }}>
+              Pick / Pack Active
+            </span>
+          )}
         </div>
       </div>
 

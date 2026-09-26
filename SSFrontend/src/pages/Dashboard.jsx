@@ -42,10 +42,14 @@ import {
   INITIAL_PRODUCTS,
   INITIAL_STOCK_MOVEMENTS
 } from '../data/mockData';
+import { hasPermission, normalizeRole, ROLES, ROLE_LABELS } from '../utils/permissions';
 
 export default function Dashboard({ currentUser, onOpenQuickAction }) {
   const [dateRange, setDateRange] = useState('Last 30 Days');
   const navigate = useNavigate();
+
+  const userRole = normalizeRole(currentUser?.role);
+  const isStaff = userRole === ROLES.STAFF;
 
   // Low stock products from initial products
   const criticalItems = INITIAL_PRODUCTS.filter(
@@ -54,6 +58,25 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
 
   return (
     <div className="dashboard-page animate-fade-in">
+      {/* Read-Only Banner for Staff */}
+      {isStaff && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 16px',
+          background: 'var(--color-neutral-100)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-neutral-700)',
+          borderLeft: '4px solid var(--color-neutral-400)'
+        }}>
+          <Zap size={16} style={{ color: 'var(--color-primary-600)', flexShrink: 0 }} />
+          <span><strong>Warehouse Operations View:</strong> Live inventory telemetry and task queues. You can execute internal transfers, record count entries, and perform order pick/pack.</span>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="page-header">
         <div className="page-header-left">
@@ -62,9 +85,14 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
             <span className="breadcrumb-sep">/</span>
             <span style={{ color: 'var(--color-neutral-800)', fontWeight: 600 }}>Dashboard</span>
           </div>
-          <h1 className="page-title">
-            Welcome back, {currentUser.name.split(' ')[0]}
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h1 className="page-title" style={{ margin: 0 }}>
+              Welcome back, {currentUser?.name?.split(' ')[0] || 'User'}
+            </h1>
+            <span className={`badge ${userRole === 'ADMIN' ? 'badge-primary' : (userRole === 'INVENTORY_MANAGER' ? 'badge-info' : 'badge-neutral')}`} style={{ fontSize: '11px' }}>
+              {ROLE_LABELS[userRole]}
+            </span>
+          </div>
           <p className="page-subtitle">
             Here is your live inventory telemetry, replenishment pipeline, and fulfillment overview.
           </p>
@@ -95,7 +123,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
             onClick={() => onOpenQuickAction('adjustment')}
           >
             <RefreshCw size={16} />
-            <span>Stock Adjustment</span>
+            <span>{isStaff ? 'Physical Count Entry' : 'Stock Adjustment'}</span>
           </button>
         </div>
       </div>

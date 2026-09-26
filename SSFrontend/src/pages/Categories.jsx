@@ -15,8 +15,10 @@ import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
 import { INITIAL_CATEGORIES } from '../data/mockData';
 import { categoryApi } from '../services/api';
+import { hasPermission } from '../utils/permissions';
 
-export default function Categories({ onNotify }) {
+export default function Categories({ onNotify, currentUser }) {
+  const canManageCategories = hasPermission.canManageProducts(currentUser?.role);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,6 +127,25 @@ export default function Categories({ onNotify }) {
 
   return (
     <div className="categories-page animate-fade-in">
+      {/* Read-Only Notice for Staff */}
+      {!canManageCategories && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 16px',
+          background: 'var(--color-neutral-100)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-neutral-700)',
+          borderLeft: '4px solid var(--color-neutral-400)'
+        }}>
+          <Layers size={16} style={{ color: 'var(--color-neutral-600)', flexShrink: 0 }} />
+          <span><strong>Read-Only Mode:</strong> Warehouse Staff profile has viewing access to category groupings and valuation. Category configuration is managed by Inventory Managers and Admins.</span>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="page-header">
         <div className="page-header-left">
@@ -140,14 +161,20 @@ export default function Categories({ onNotify }) {
         </div>
 
         <div className="page-header-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleOpenCreate}
-          >
-            <Plus size={16} />
-            <span>Create Category</span>
-          </button>
+          {canManageCategories ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleOpenCreate}
+            >
+              <Plus size={16} />
+              <span>Create Category</span>
+            </button>
+          ) : (
+            <span className="badge badge-neutral" style={{ padding: '6px 12px', fontSize: '12px' }}>
+              Read-Only Access
+            </span>
+          )}
         </div>
       </div>
 
@@ -293,24 +320,30 @@ export default function Categories({ onNotify }) {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-xs"
-                    onClick={() => handleOpenEdit(cat)}
-                  >
-                    <Edit2 size={13} />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-xs"
-                    onClick={() => handleToggleArchive(cat)}
-                  >
-                    {cat.status === 'Active' ? <Archive size={13} /> : <RotateCcw size={13} />}
-                    <span>{cat.status === 'Active' ? 'Archive' : 'Restore'}</span>
-                  </button>
-                </div>
+                {canManageCategories ? (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-xs"
+                      onClick={() => handleOpenEdit(cat)}
+                    >
+                      <Edit2 size={13} />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => handleToggleArchive(cat)}
+                    >
+                      {cat.status === 'Active' ? <Archive size={13} /> : <RotateCcw size={13} />}
+                      <span>{cat.status === 'Active' ? 'Archive' : 'Restore'}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--color-neutral-400)' }}>Read-Only</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -355,22 +388,28 @@ export default function Categories({ onNotify }) {
                     <StatusBadge status={cat.status} />
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-xs"
-                        onClick={() => handleOpenEdit(cat)}
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-xs"
-                        onClick={() => handleToggleArchive(cat)}
-                      >
-                        {cat.status === 'Active' ? <Archive size={13} /> : <RotateCcw size={13} />}
-                      </button>
-                    </div>
+                    {canManageCategories ? (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-xs"
+                          onClick={() => handleOpenEdit(cat)}
+                          title="Edit category"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => handleToggleArchive(cat)}
+                          title={cat.status === 'Active' ? 'Archive category' : 'Restore category'}
+                        >
+                          {cat.status === 'Active' ? <Archive size={13} /> : <RotateCcw size={13} />}
+                        </button>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '11px', color: 'var(--color-neutral-400)' }}>-</span>
+                    )}
                   </td>
                 </tr>
               ))}

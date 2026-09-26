@@ -33,11 +33,37 @@ import {
   INITIAL_WAREHOUSES,
   INITIAL_CATEGORIES
 } from '../data/mockData';
+import { hasPermission } from '../utils/permissions';
+import { useNavigate } from 'react-router-dom';
 
-export default function Reports({ onNotify }) {
+export default function Reports({ onNotify, currentUser }) {
+  const navigate = useNavigate();
+  const canViewReports = hasPermission.canViewReports(currentUser?.role);
   const [activeReportTab, setActiveReportTab] = useState('valuation');
   const [selectedHub, setSelectedHub] = useState('All');
   const [dateFilter, setDateFilter] = useState('Quarter to Date');
+
+  if (!canViewReports) {
+    return (
+      <div className="card text-center" style={{ maxWidth: '500px', margin: '60px auto', padding: '40px 24px' }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--color-warning-50)', color: 'var(--color-warning-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <AlertTriangle size={28} />
+        </div>
+        <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Access Restricted</h2>
+        <p style={{ fontSize: '14px', color: 'var(--color-neutral-600)', marginBottom: '24px', lineHeight: 1.5 }}>
+          Executive reports and financial valuation analytics are accessible only to <strong>Inventory Managers</strong> and <strong>Administrators</strong>.
+        </p>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => navigate('/dashboard')}
+          style={{ margin: '0 auto' }}
+        >
+          Return to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   const procurementVsSalesData = [
     { month: 'Apr', purchase: 62000, sales: 84000 },

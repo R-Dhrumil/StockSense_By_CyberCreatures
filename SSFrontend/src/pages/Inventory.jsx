@@ -20,8 +20,12 @@ import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import { INITIAL_WAREHOUSES } from '../data/mockData';
+import { hasPermission, normalizeRole, ROLES } from '../utils/permissions';
 
-export default function Inventory({ products, setProducts, onNotify, activeWarehouse }) {
+export default function Inventory({ products, setProducts, onNotify, activeWarehouse, currentUser }) {
+  const currentRole = normalizeRole(currentUser?.role);
+  const isStaff = currentRole === ROLES.STAFF;
+  const canValidateAdjustments = hasPermission.canValidateAdjustments(currentUser?.role);
   const [selectedWarehouse, setSelectedWarehouse] = useState(activeWarehouse || 'All');
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -92,6 +96,16 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
 
     const targetProduct = products.find(p => p.id === adjustData.productId);
     if (!targetProduct) return;
+
+    if (isStaff) {
+      setIsAdjustModalOpen(false);
+      onNotify(
+        'Physical Count Recorded',
+        `Count entry ${adjustData.quantity} submitted for ${targetProduct.name}. Awaiting Inventory Manager approval.`,
+        'info'
+      );
+      return;
+    }
 
     let newQty = targetProduct.availableQty;
     const delta = parseInt(adjustData.quantity, 10) || 0;
@@ -261,17 +275,17 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
               setAdjustData({
                 productId: row.id,
                 warehouse: row.warehouse,
-                mode: 'add',
-                quantity: 10,
-                reason: 'Routine Cycle Count Adjustment',
+                mode: isStaff ? 'exact' : 'add',
+                quantity: isStaff ? row.availableQty : 10,
+                reason: isStaff ? 'Physical Cycle Count Verification' : 'Routine Cycle Count Adjustment',
                 notes: '',
                 reference: `ADJ-${Date.now().toString().slice(-4)}`
               });
               setIsAdjustModalOpen(true);
             }}
-            title="Adjust Stock"
+            title={isStaff ? 'Enter Physical Count' : 'Adjust Stock'}
           >
-            Adjust
+            {isStaff ? 'Count' : 'Adjust'}
           </button>
           <button
             type="button"
@@ -339,9 +353,9 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
               setAdjustData({
                 productId: products[0]?.id || '',
                 warehouse: 'West Coast Hub',
-                mode: 'add',
+                mode: isStaff ? 'exact' : 'add',
                 quantity: 10,
-                reason: 'Routine Cycle Count Adjustment',
+                reason: isStaff ? 'Physical Cycle Count Verification' : 'Routine Cycle Count Adjustment',
                 notes: '',
                 reference: `ADJ-${Date.now().toString().slice(-4)}`
               });
@@ -349,7 +363,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             }}
           >
             <RefreshCw size={16} />
-            <span>Guided Stock Adjustment</span>
+            <span>{isStaff ? 'Physical Count Entry' : 'Guided Stock Adjustment'}</span>
           </button>
         </div>
       </div>
@@ -441,13 +455,13 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
       <Modal
         isOpen={isAdjustModalOpen}
         onClose={() => setIsAdjustModalOpen(false)}
-        title="Guided Stock Adjustment Workflow"
-        subtitle="Mandatory audit trail reason code and confirmation required"
+        title={isStaff ? 'Physical Stock Count Entry' : 'Guided Stock Adjustment Workflow'}
+        subtitle={isStaff ? 'Enter physical shelf count for inventory manager verification' : 'Mandatory audit trail reason code and confirmation required'}
         size="lg"
         footer={
           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
             <span style={{ fontSize: '11px', color: 'var(--color-neutral-500)' }}>
-              Audit logged by Alexandria Vance (Admin)
+              Logged by {currentUser?.name || 'User'} ({currentUser?.role || 'Staff'})
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -462,7 +476,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
                 className="btn btn-primary"
                 onClick={handlePerformAdjustment}
               >
-                Confirm & Record Audit Entry
+                {isStaff ? 'Submit Count for Validation' : 'Confirm & Record Audit Entry'}
               </button>
             </div>
           </div>

@@ -17,8 +17,10 @@ import {
 import DataTable from '../components/common/DataTable';
 import Modal from '../components/common/Modal';
 import { INITIAL_SUPPLIERS, INITIAL_PURCHASE_ORDERS } from '../data/mockData';
+import { hasPermission } from '../utils/permissions';
 
-export default function Suppliers({ onNotify }) {
+export default function Suppliers({ onNotify, currentUser }) {
+  const canManageSuppliers = hasPermission.canCreateReceipts(currentUser?.role);
   const [suppliers, setSuppliers] = useState(INITIAL_SUPPLIERS);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,14 +184,16 @@ export default function Suppliers({ onNotify }) {
           >
             <ExternalLink size={15} />
           </button>
-          <button
-            type="button"
-            className="action-menu-btn"
-            onClick={(e) => handleOpenEdit(row, e)}
-            title="Edit Vendor"
-          >
-            <Edit2 size={14} />
-          </button>
+          {canManageSuppliers && (
+            <button
+              type="button"
+              className="action-menu-btn"
+              onClick={(e) => handleOpenEdit(row, e)}
+              title="Edit Vendor"
+            >
+              <Edit2 size={14} />
+            </button>
+          )}
         </div>
       )
     }
@@ -212,14 +216,20 @@ export default function Suppliers({ onNotify }) {
         </div>
 
         <div className="page-header-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleOpenCreate}
-          >
-            <Plus size={16} />
-            <span>Add Supplier</span>
-          </button>
+          {canManageSuppliers ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleOpenCreate}
+            >
+              <Plus size={16} />
+              <span>Add Supplier</span>
+            </button>
+          ) : (
+            <span className="badge badge-neutral" style={{ padding: '6px 12px', fontSize: '12px' }}>
+              Directory View
+            </span>
+          )}
         </div>
       </div>
 

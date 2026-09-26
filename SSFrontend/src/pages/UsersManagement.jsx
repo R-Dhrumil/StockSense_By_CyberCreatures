@@ -21,8 +21,12 @@ import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import { INITIAL_USERS, ROLE_PERMISSIONS_MATRIX } from '../data/mockData';
+import { hasPermission } from '../utils/permissions';
+import { useNavigate } from 'react-router-dom';
 
-export default function UsersManagement({ onNotify }) {
+export default function UsersManagement({ onNotify, currentUser }) {
+  const navigate = useNavigate();
+  const canManageUsers = hasPermission.canManageUsers(currentUser?.role);
   const [users, setUsers] = useState(INITIAL_USERS);
   const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'permissions'
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -33,6 +37,28 @@ export default function UsersManagement({ onNotify }) {
     department: 'Central Fulfillment',
     location: 'Oakland, CA'
   });
+
+  if (!canManageUsers) {
+    return (
+      <div className="card text-center" style={{ maxWidth: '500px', margin: '60px auto', padding: '40px 24px' }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--color-warning-50)', color: 'var(--color-warning-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <Shield size={28} />
+        </div>
+        <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Access Restricted</h2>
+        <p style={{ fontSize: '14px', color: 'var(--color-neutral-600)', marginBottom: '24px', lineHeight: 1.5 }}>
+          User provisioning, team role assignments, and permission matrices can only be managed by <strong>System Administrators</strong>.
+        </p>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => navigate('/dashboard')}
+          style={{ margin: '0 auto' }}
+        >
+          Return to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   const handleSendInvite = (e) => {
     e.preventDefault();
@@ -170,7 +196,7 @@ export default function UsersManagement({ onNotify }) {
             <div>
               <h3 className="card-title">Granular Security Privilege Matrix</h3>
               <p className="card-subtitle">
-                Defined access tiers for Admin, Inventory Manager, Warehouse Staff, and Viewer profiles
+                Defined access tiers for Admin, Inventory Manager, and Warehouse Staff
               </p>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -182,7 +208,7 @@ export default function UsersManagement({ onNotify }) {
             <table className="permission-matrix">
               <thead>
                 <tr>
-                  <th style={{ width: '280px' }}>System Module</th>
+                  <th style={{ width: '320px' }}>System Action / Module</th>
                   <th>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                       <Shield size={14} style={{ color: 'var(--color-primary-500)' }} /> Admin
@@ -198,11 +224,6 @@ export default function UsersManagement({ onNotify }) {
                       <Truck size={14} style={{ color: 'var(--color-success-500)' }} /> Warehouse Staff
                     </span>
                   </th>
-                  <th>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      <Eye size={14} style={{ color: 'var(--color-neutral-400)' }} /> Viewer
-                    </span>
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -211,7 +232,7 @@ export default function UsersManagement({ onNotify }) {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Lock size={14} style={{ color: 'var(--color-primary-600)' }} />
-                        <span>{row.module}</span>
+                        <span style={{ fontWeight: 500 }}>{row.module}</span>
                       </div>
                     </td>
                     <td>
@@ -223,13 +244,8 @@ export default function UsersManagement({ onNotify }) {
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${row.staff === 'No Access' ? 'badge-neutral' : (row.staff.includes('Only') ? 'badge-warning' : 'badge-info')}`}>
+                      <span className={`badge ${row.staff === 'No Access' ? 'badge-neutral' : (row.staff.includes('Only') ? 'badge-warning' : 'badge-success')}`}>
                         {row.staff}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${row.viewer === 'No Access' ? 'badge-neutral' : 'badge-neutral'}`}>
-                        {row.viewer}
                       </span>
                     </td>
                   </tr>
@@ -299,10 +315,9 @@ export default function UsersManagement({ onNotify }) {
                 value={inviteData.role}
                 onChange={(e) => setInviteData({ ...inviteData, role: e.target.value })}
               >
-                <option value="Admin">Admin (Full Control)</option>
-                <option value="Inventory Manager">Inventory Manager</option>
-                <option value="Warehouse Staff">Warehouse Staff</option>
-                <option value="Viewer">Viewer (Read-only)</option>
+                <option value="Admin">Admin (System Owner / Settings)</option>
+                <option value="Inventory Manager">Inventory Manager (Stock Operations)</option>
+                <option value="Warehouse Staff">Warehouse Staff (Transfers & Counting)</option>
               </select>
             </div>
 
