@@ -6,7 +6,7 @@ import {
   Warehouse,
   Layers,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   Clock,
   AlertTriangle,
   ArrowUpRight,
@@ -116,7 +116,7 @@ export default function Reports({ onNotify }) {
           </div>
 
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)' }}>
-            Financial Year: 2026 • Reporting Currency: USD ($)
+            Financial Year: 2026 • Reporting Currency: INR (₹)
           </div>
         </div>
       </div>
@@ -159,9 +159,9 @@ export default function Reports({ onNotify }) {
           <div className="kpi-grid">
             <KpiCard
               title="Total Asset Valuation"
-              value="$1,440,000"
+              value="₹1,440,000"
               subtext="Calculated via FIFO method"
-              icon={DollarSign}
+              icon={IndianRupee}
               trend="+5.4% YoY"
               trendDirection="up"
               variant="primary"
@@ -186,7 +186,7 @@ export default function Reports({ onNotify }) {
             />
             <KpiCard
               title="Holding / Carrying Cost"
-              value="$216,000"
+              value="₹216,000"
               subtext="Est. 15% annual storage overhead"
               icon={AlertTriangle}
               trend="Controlled"
@@ -198,7 +198,7 @@ export default function Reports({ onNotify }) {
           <div className="chart-card mb-6">
             <div className="chart-header">
               <div>
-                <h3 className="chart-title">Valuation History by Fiscal Month ($k)</h3>
+                <h3 className="chart-title">Valuation History by Fiscal Month (₹k)</h3>
                 <p className="card-subtitle">Month-end audited warehouse balances</p>
               </div>
             </div>
@@ -215,7 +215,7 @@ export default function Reports({ onNotify }) {
                   <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
                   <Tooltip
-                    formatter={(val) => [`$${val}k`, 'Net Valuation']}
+                    formatter={(val) => [`₹${val}k`, 'Net Valuation']}
                     contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
                   />
                   <Area type="monotone" dataKey="inventoryValue" stroke="#E8894E" strokeWidth={3} fill="url(#repVal)" />
@@ -242,7 +242,7 @@ export default function Reports({ onNotify }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)', marginBottom: '6px' }}>
                       <span style={{ fontWeight: 600, color: 'var(--color-neutral-800)' }}>{tier.range}</span>
                       <span style={{ fontWeight: 700, color: tier.percentage < 10 ? 'var(--color-danger-600)' : 'var(--color-neutral-700)' }}>
-                        ${tier.value.toLocaleString()} ({tier.percentage}%)
+                        ₹{tier.value.toLocaleString()} ({tier.percentage}%)
                       </span>
                     </div>
                     <div className="capacity-bar" style={{ height: '8px' }}>
@@ -268,7 +268,7 @@ export default function Reports({ onNotify }) {
                   <Clock size={32} />
                 </div>
                 <h4 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-                  Stagnant Inventory Flag: $75,000
+                  Stagnant Inventory Flag: ₹75,000
                 </h4>
                 <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)', maxWidth: '360px', margin: '8px auto 20px' }}>
                   12 SKUs haven't registered outbound sales movements in over 90 days. Recommended for vendor return or promotional clearance.
@@ -302,12 +302,12 @@ export default function Reports({ onNotify }) {
                 <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
                 <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
                 <Tooltip
-                  formatter={(val) => [`$${val.toLocaleString()}`, '']}
+                  formatter={(val) => [`₹${val.toLocaleString()}`, '']}
                   contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
                 />
                 <Legend />
-                <Bar dataKey="purchase" name="Procurement Inflow ($)" fill="#FAC4A2" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="sales" name="Sales Dispatched ($)" fill="#E8894E" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="purchase" name="Procurement Inflow (₹)" fill="#FAC4A2" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="sales" name="Sales Dispatched (₹)" fill="#E8894E" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -337,7 +337,7 @@ export default function Reports({ onNotify }) {
                   <td style={{ fontWeight: 800, color: 'var(--color-primary-600)' }}>#{idx + 1}</td>
                   <td className="font-semibold">{item.name}</td>
                   <td style={{ fontWeight: 700 }}>{item.volume} units</td>
-                  <td style={{ fontWeight: 700, color: 'var(--color-primary-700)' }}>${item.revenue.toLocaleString()}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--color-primary-700)' }}>₹{item.revenue.toLocaleString()}</td>
                   <td>
                     <span className="badge badge-primary">High Velocity</span>
                   </td>

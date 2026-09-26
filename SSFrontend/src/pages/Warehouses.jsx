@@ -7,7 +7,7 @@ import {
   Phone,
   Mail,
   Box,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   LayoutGrid,
   List,
@@ -132,11 +132,11 @@ export default function Warehouses({ onNotify }) {
 
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="kpi-icon success">
-            <DollarSign size={22} />
+            <IndianRupee size={22} />
           </div>
           <div>
             <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-              ${totalNetworkValue.toLocaleString()}
+              ₹{totalNetworkValue.toLocaleString()}
             </div>
             <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)' }}>
               Total Stored Asset Value
@@ -225,7 +225,7 @@ export default function Warehouses({ onNotify }) {
                   <div>
                     <div className="warehouse-stat-label">Stored Inventory Value</div>
                     <div className="warehouse-stat-value" style={{ color: 'var(--color-primary-700)' }}>
-                      ${wh.inventoryValue.toLocaleString()}
+                      ₹{wh.inventoryValue.toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -278,7 +278,7 @@ export default function Warehouses({ onNotify }) {
                   </td>
                   <td>{wh.totalProducts} items</td>
                   <td style={{ fontWeight: 700, color: 'var(--color-primary-700)' }}>
-                    ${wh.inventoryValue.toLocaleString()}
+                    ₹{wh.inventoryValue.toLocaleString()}
                   </td>
                   <td><StatusBadge status={wh.status} /></td>
                 </tr>
@@ -369,7 +369,7 @@ export default function Warehouses({ onNotify }) {
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '10px', color: 'var(--color-neutral-400)', textTransform: 'uppercase' }}>Stored Value</div>
                   <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: 'var(--color-primary-700)' }}>
-                    ${selectedWarehouse.inventoryValue.toLocaleString()}
+                    ₹{selectedWarehouse.inventoryValue.toLocaleString()}
                   </div>
                 </div>
 

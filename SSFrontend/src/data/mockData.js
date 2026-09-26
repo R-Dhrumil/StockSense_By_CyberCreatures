@@ -684,7 +684,7 @@ export const STOCK_AGING_DATA = [
 
 export const DEFAULT_NOTIFICATIONS = [
   { id: 'notif-1', title: 'Critical Stock Alert', message: 'Optical Laser Distance Gauge reached 0 pcs in East Coast Dist.', type: 'danger', time: '10m ago', unread: true },
-  { id: 'notif-2', title: 'New PO Ordered', message: 'PO-2026-003 placed with ElectroCore Global ($17,400.00).', type: 'info', time: '45m ago', unread: true },
+  { id: 'notif-2', title: 'New PO Ordered', message: 'PO-2026-003 placed with ElectroCore Global (₹17,400.00).', type: 'info', time: '45m ago', unread: true },
   { id: 'notif-3', title: 'Inbound Shipment Arrived', message: 'PO-2026-004 heavy pneumatic cylinders checked in at Southern Depot.', type: 'success', time: '2h ago', unread: false },
   { id: 'notif-4', title: 'Low Stock Warning', message: 'High-Torque Planetary Gearbox has only 9 units remaining.', type: 'warning', time: '4h ago', unread: false }
 ];

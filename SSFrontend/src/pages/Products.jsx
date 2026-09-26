@@ -14,7 +14,7 @@ import {
   History,
   QrCode,
   Tag,
-  DollarSign,
+  IndianRupee,
   Boxes,
   Sliders,
   X,
@@ -286,7 +286,7 @@ export default function Products({ products, setProducts, onNotify }) {
       accessor: 'price',
       render: (row) => (
         <span style={{ fontWeight: 600 }}>
-          ${parseFloat(row.price).toFixed(2)}
+          ₹{parseFloat(row.price).toFixed(2)}
         </span>
       )
     },
@@ -596,7 +596,7 @@ export default function Products({ products, setProducts, onNotify }) {
           <div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Unit Selling Price ($)</label>
+                <label className="form-label">Unit Selling Price (₹)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -607,7 +607,7 @@ export default function Products({ products, setProducts, onNotify }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Unit Cost Price ($)</label>
+                <label className="form-label">Unit Cost Price (₹)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -629,7 +629,7 @@ export default function Products({ products, setProducts, onNotify }) {
                 </span>
               </div>
               <p style={{ fontSize: '11px', color: 'var(--color-primary-600)', marginTop: '4px' }}>
-                Gross margin calculated per unit sold: ${Math.max(0, formData.price - formData.costPrice).toFixed(2)}
+                Gross margin calculated per unit sold: ₹{Math.max(0, formData.price - formData.costPrice).toFixed(2)}
               </p>
             </div>
 
@@ -762,12 +762,12 @@ export default function Products({ products, setProducts, onNotify }) {
                 <div className="detail-row">
                   <div className="detail-label">Selling Price:</div>
                   <div className="detail-value font-bold" style={{ color: 'var(--color-primary-700)' }}>
-                    ${parseFloat(viewProductModal.price).toFixed(2)}
+                    ₹{parseFloat(viewProductModal.price).toFixed(2)}
                   </div>
                 </div>
                 <div className="detail-row">
                   <div className="detail-label">Cost of Goods:</div>
-                  <div className="detail-value">${parseFloat(viewProductModal.costPrice).toFixed(2)}</div>
+                  <div className="detail-value">₹{parseFloat(viewProductModal.costPrice).toFixed(2)}</div>
                 </div>
               </div>
 

@@ -8,9 +8,8 @@ import {
   Archive,
   RotateCcw,
   Package,
-  DollarSign,
-  Search,
-  RefreshCw
+  IndianRupee,
+  Search
 } from 'lucide-react';
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
@@ -184,11 +183,11 @@ export default function Categories({ onNotify }) {
 
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="kpi-icon success">
-            <DollarSign size={22} />
+            <IndianRupee size={22} />
           </div>
           <div>
             <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-              ${totalValuation.toLocaleString()}
+              ₹{totalValuation.toLocaleString()}
             </div>
             <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)' }}>
               Cumulative Stock Value
@@ -289,7 +288,7 @@ export default function Categories({ onNotify }) {
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '10px', color: 'var(--color-neutral-400)', textTransform: 'uppercase' }}>Valuation</span>
                     <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--color-primary-700)' }}>
-                      ${cat.stockValue.toLocaleString()}
+                      ₹{cat.stockValue.toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -349,7 +348,7 @@ export default function Categories({ onNotify }) {
                   </td>
                   <td>
                     <span style={{ fontWeight: 700, color: 'var(--color-primary-700)' }}>
-                      ${cat.stockValue.toLocaleString()}
+                      ₹{cat.stockValue.toLocaleString()}
                     </span>
                   </td>
                   <td>
