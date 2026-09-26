@@ -1,4 +1,5 @@
 import http from 'http';
+import os from 'os';
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { env } from './config/env.js';
@@ -15,12 +16,28 @@ const startServer = async () => {
   // Initialize Real-time Socket.IO WebSocket Server
   initSocket(server);
 
-  server.listen(PORT, () => {
-    logger.success(`🚀 Server running in ${env.NODE_ENV} mode on http://localhost:${PORT}`);
+  const HOST = env.HOST || '0.0.0.0';
+
+  // Get local network IPv4 address for same-network sharing
+  const networkInterfaces = os.networkInterfaces();
+  let localIp = '127.0.0.1';
+  for (const name of Object.keys(networkInterfaces)) {
+    for (const net of networkInterfaces[name] || []) {
+      if (net.family === 'IPv4' && !net.internal) {
+        localIp = net.address;
+        break;
+      }
+    }
+  }
+
+  server.listen(Number(PORT), HOST, () => {
+    logger.success(`🚀 Server running in ${env.NODE_ENV} mode:`);
+    logger.info(`   ➜  Local:   http://localhost:${PORT}`);
+    logger.info(`   ➜  Network: http://${localIp}:${PORT} (Same Network Sharing)`);
     logger.info(`📌 Health check available at http://localhost:${PORT}/health`);
     logger.info(`📖 Swagger API Docs at http://localhost:${PORT}/docs`);
     logger.info(`📌 API endpoints mounted at http://localhost:${PORT}/api/v1`);
-    logger.info(`⚡ Socket.IO Real-time server active on ws://localhost:${PORT}`);
+    logger.info(`⚡ Socket.IO Real-time server active on ws://${localIp}:${PORT}`);
   });
 
   // Handle unhandled promise rejections
