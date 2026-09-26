@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   TrendingUp,
@@ -20,7 +20,8 @@ import {
   X,
   FileText,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  Warehouse
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';

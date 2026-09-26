@@ -24,7 +24,8 @@ import {
   Plug,
   Wrench,
   Camera,
-  RefreshCw
+  RefreshCw,
+  Warehouse
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
