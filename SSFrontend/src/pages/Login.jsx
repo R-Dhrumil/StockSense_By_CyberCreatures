@@ -12,6 +12,8 @@ import {
   Warehouse,
   Boxes
 } from 'lucide-react';
+import logoSvg from '../assets/logo.svg';
+import faviconSvg from '../assets/fevicon.svg';
 
 export default function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('a.vance@stocksense.io');
@@ -80,7 +82,7 @@ export default function Login({ onLoginSuccess }) {
       <div className="login-brand">
         <div className="login-brand-content">
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.18)', padding: '6px 14px', borderRadius: 'var(--radius-full)', marginBottom: '24px', backdropFilter: 'blur(8px)' }}>
-            <img src="/favicon.svg" alt="StockSense" style={{ width: 18, height: 18 }} />
+            <img src={faviconSvg} alt="StockSense" style={{ width: 18, height: 18 }} />
             <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Next-Gen Cloud Inventory OS</span>
           </div>
 
@@ -117,7 +119,7 @@ export default function Login({ onLoginSuccess }) {
           <div className="login-form-header">
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '18px' }}>
               <img 
-                src="/logo.svg" 
+                src={logoSvg} 
                 alt="StockSense by CyberCreatures" 
                 style={{ height: '48px', width: 'auto', objectFit: 'contain' }} 
               />

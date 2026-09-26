@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import logoDarkSvg from '../../assets/logo-dark.svg';
+import faviconSvg from '../../assets/fevicon.svg';
 
 const NAV_GROUPS = [
   {
@@ -70,17 +72,20 @@ export default function Sidebar({
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         {/* Sidebar Header */}
         <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <img 
-              src="/favicon.svg" 
-              alt="StockSense" 
-              style={{ width: 26, height: 26, objectFit: 'contain' }} 
-            />
-          </div>
-
-          <div className="sidebar-brand">
-            <span className="sidebar-brand-name">StockSense</span>
-            <span className="sidebar-brand-sub">by CyberCreatures</span>
+          <div className="sidebar-logo-container">
+            {collapsed ? (
+              <img 
+                src={faviconSvg} 
+                alt="StockSense" 
+                className="sidebar-collapsed-logo" 
+              />
+            ) : (
+              <img 
+                src={logoDarkSvg} 
+                alt="StockSense by CyberCreatures" 
+                className="sidebar-full-logo" 
+              />
+            )}
           </div>
 
           <button
@@ -88,7 +93,6 @@ export default function Sidebar({
             className="sidebar-toggle"
             onClick={onToggleCollapse}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            style={{ marginLeft: 'auto' }}
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -125,21 +129,11 @@ export default function Sidebar({
 
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
-          <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 700,
-            fontSize: '12px',
-            flexShrink: 0
-          }}>
-            SS
-          </div>
+          <img 
+            src={faviconSvg} 
+            alt="StockSense" 
+            style={{ width: 28, height: 28, objectFit: 'contain', flexShrink: 0 }}
+          />
           <div className="sidebar-footer-info" style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-neutral-200)', whiteSpace: 'nowrap' }}>
               StockSense v2.4
