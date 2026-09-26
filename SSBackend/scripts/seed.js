@@ -67,13 +67,20 @@ const seedDatabase = async () => {
 
     await User.createMany(fakeUserData);
 
-    // 4. Seed Categories & Products Catalog from SQL
-    logger.info('Seeding product categories & master catalog items...');
-    const catalogSqlPath = path.resolve(process.cwd(), 'src/database/seed_catalog.sql');
-    if (fs.existsSync(catalogSqlPath)) {
-      const catalogSql = fs.readFileSync(catalogSqlPath, 'utf8');
-      await pool.query(catalogSql);
-      logger.success('✅ Categories & Products catalog seeded successfully into PostgreSQL!');
+    // 4. Seed Multi-Warehouse, Sub-Locations / Racks, and Inventory Data
+    logger.info('Seeding multi-warehouse facilities, racks, products catalog & stock levels...');
+    const inventorySqlPath = path.resolve(process.cwd(), 'src/database/seed_inventory.sql');
+    if (fs.existsSync(inventorySqlPath)) {
+      const inventorySql = fs.readFileSync(inventorySqlPath, 'utf8');
+      await pool.query(inventorySql);
+      logger.success('✅ Warehouses, Sub-locations/Racks & Stock Levels seeded successfully into PostgreSQL!');
+    } else {
+      const catalogSqlPath = path.resolve(process.cwd(), 'src/database/seed_catalog.sql');
+      if (fs.existsSync(catalogSqlPath)) {
+        const catalogSql = fs.readFileSync(catalogSqlPath, 'utf8');
+        await pool.query(catalogSql);
+        logger.success('✅ Categories & Products catalog seeded successfully into PostgreSQL!');
+      }
     }
 
     logger.success('✅ PostgreSQL (Direct SQL) fully seeded with enterprise inventory data!\n');
@@ -88,8 +95,9 @@ const seedDatabase = async () => {
     console.log('║ STAFF             │ marcus.vance@stocksense.io           │ Staff@1234               ║');
     console.log('╚═════════════════════════════════════════════════════════════════════════════════════╝');
     console.log(`\n📊 Total Users Seeded: ${3 + fakeUserData.length}`);
-    console.log('📦 Products & Categories Seeded: 8 Categories, 11 Products');
-    console.log('📌 Swagger Interactive Docs: http://localhost:5002/docs\n');
+    console.log('🏭 Warehouses & Sub-Locations: 5 Facilities, 21 Granular Racks/Zones');
+    console.log('📦 Products & Stock Levels: 12 Master Products, 18 Rack Allocations');
+    console.log('📌 Swagger Interactive Docs: http://localhost:5000/docs\n');
 
     await pool.end();
     process.exit(0);

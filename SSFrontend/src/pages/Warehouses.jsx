@@ -30,6 +30,7 @@ import Drawer from '../components/common/Drawer';
 import StatusBadge from '../components/common/StatusBadge';
 import { INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
+import { warehouseApi } from '../services/api';
 
 export default function Warehouses({ onNotify, currentUser }) {
   const canManageWarehouses = hasPermission.canManageWarehouses(currentUser?.role);
@@ -70,10 +71,10 @@ export default function Warehouses({ onNotify, currentUser }) {
   const fetchWarehouses = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/v1/warehouses');
-      const data = await res.json();
-      if (data?.data?.warehouses && data.data.warehouses.length > 0) {
-        setWarehouses(data.data.warehouses.map(w => ({
+      const res = await warehouseApi.getWarehouses();
+      const data = res?.data;
+      if (data?.warehouses && data.warehouses.length > 0) {
+        setWarehouses(data.warehouses.map(w => ({
           id: w.id,
           name: w.name,
           code: w.code,
@@ -104,10 +105,9 @@ export default function Warehouses({ onNotify, currentUser }) {
   const fetchLocations = async (warehouseId) => {
     setLoadingLocations(true);
     try {
-      const res = await fetch(`/api/v1/warehouses/${warehouseId}/locations`);
-      const data = await res.json();
-      if (data?.data?.locations) {
-        setLocations(data.data.locations);
+      const res = await warehouseApi.getWarehouseLocations(warehouseId);
+      if (res?.data?.locations) {
+        setLocations(res.data.locations);
       } else {
         setLocations([]);
       }
@@ -148,12 +148,11 @@ export default function Warehouses({ onNotify, currentUser }) {
 
     setLoadingStockForLoc(locationId);
     try {
-      const res = await fetch(`/api/v1/warehouses/${warehouseId}/locations/${locationId}/stock`);
-      const data = await res.json();
-      if (data?.data?.stock) {
+      const res = await warehouseApi.getLocationStock(warehouseId, locationId);
+      if (res?.data?.stock) {
         setInspectedLocationStock(prev => ({
           ...prev,
-          [locationId]: data.data.stock
+          [locationId]: res.data.stock
         }));
       } else {
         setInspectedLocationStock(prev => ({

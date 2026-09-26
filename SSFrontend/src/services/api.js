@@ -219,5 +219,47 @@ export const categoryApi = {
   },
 };
 
+// Warehouse & Location Service Endpoints
+export const warehouseApi = {
+  getWarehouses: async () => {
+    return await api.get('/warehouses');
+  },
+
+  getWarehouseLocations: async (id) => {
+    return await api.get(`/warehouses/${id}/locations`);
+  },
+
+  getLocationStock: async (id, locationId) => {
+    return await api.get(`/warehouses/${id}/locations/${locationId}/stock`);
+  },
+
+  createWarehouse: async (warehouseData) => {
+    return await api.post('/warehouses', warehouseData);
+  },
+
+  createLocation: async (id, locationData) => {
+    return await api.post(`/warehouses/${id}/locations`, locationData);
+  },
+};
+
+// User Management Service Endpoints
+export const userApi = {
+  getUsers: async () => {
+    return await api.get('/users');
+  },
+
+  createUser: async (userData) => {
+    return await api.post('/users', userData);
+  },
+
+  getUserById: async (id) => {
+    return await api.get(`/users/${id}`);
+  },
+
+  updateUserRole: async (id, role) => {
+    return await api.patch(`/users/${id}/role`, { role });
+  },
+};
+
 export default api;
 
