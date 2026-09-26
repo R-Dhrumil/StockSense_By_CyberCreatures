@@ -1,0 +1,268 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Menu,
+  Search,
+  Plus,
+  Bell,
+  ChevronDown,
+  Warehouse,
+  Shield,
+  LogOut,
+  UserCheck,
+  PackagePlus,
+  RefreshCw,
+  ShoppingCart,
+  Send
+} from 'lucide-react';
+
+export default function Topbar({
+  sidebarCollapsed,
+  onToggleMobileSidebar,
+  activeWarehouse,
+  onChangeWarehouse,
+  currentUser,
+  onChangeRole,
+  onLogout,
+  onOpenNotifications,
+  unreadCount = 2,
+  onOpenQuickAction
+}) {
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [quickActionOpen, setQuickActionOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const userMenuRef = useRef(null);
+  const quickActionRef = useRef(null);
+  const navigate = useNavigate();
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+      if (quickActionRef.current && !quickActionRef.current.contains(event.target)) {
+        setQuickActionOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleGlobalSearchSubmit = (e) => {
+    if (e.key === 'Enter' && globalSearch.trim()) {
+      navigate(`/products?search=${encodeURIComponent(globalSearch.trim())}`);
+    }
+  };
+
+  return (
+    <header className={`topbar ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      {/* Mobile toggle button */}
+      <button
+        type="button"
+        className="topbar-icon-btn mobile-menu-btn"
+        onClick={onToggleMobileSidebar}
+        aria-label="Open mobile navigation menu"
+        style={{ display: 'none' }}
+      >
+        <Menu size={20} />
+      </button>
+
+      {/* Global Search Bar */}
+      <div className="topbar-search">
+        <Search size={18} className="topbar-search-icon" />
+        <input
+          type="text"
+          className="topbar-search-input"
+          placeholder="Search products, SKUs, purchase orders, suppliers... (Press Enter)"
+          value={globalSearch}
+          onChange={(e) => setGlobalSearch(e.target.value)}
+          onKeyDown={handleGlobalSearchSubmit}
+          aria-label="Global inventory search"
+        />
+        <span className="topbar-search-kbd">⌘K</span>
+      </div>
+
+      {/* Warehouse Selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <Warehouse size={16} style={{ color: 'var(--color-primary-600)' }} />
+        <select
+          value={activeWarehouse}
+          onChange={(e) => onChangeWarehouse(e.target.value)}
+          className="form-select"
+          style={{ height: '36px', fontSize: 'var(--font-size-xs)', padding: '0 28px 0 10px', minWidth: '160px' }}
+          aria-label="Select Active Warehouse"
+        >
+          <option value="All">All Warehouses (Global)</option>
+          <option value="West Coast Hub">West Coast Hub (Oakland)</option>
+          <option value="Central Logistics Hub">Central Logistics (Dallas)</option>
+          <option value="East Coast Dist">East Coast Dist (Allentown)</option>
+          <option value="Southern Regional Depot">Southern Depot (Atlanta)</option>
+        </select>
+      </div>
+
+      {/* Topbar Right Actions */}
+      <div className="topbar-actions">
+        {/* Quick Action Dropdown */}
+        <div className="dropdown" ref={quickActionRef}>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => setQuickActionOpen(!quickActionOpen)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={16} />
+            <span>Quick Action</span>
+            <ChevronDown size={14} />
+          </button>
+
+          {quickActionOpen && (
+            <div className="dropdown-menu" style={{ width: '220px' }}>
+              <button
+                type="button"
+                className="dropdown-item"
+                onClick={() => {
+                  setQuickActionOpen(false);
+                  onOpenQuickAction('product');
+                }}
+              >
+                <PackagePlus size={16} style={{ color: 'var(--color-primary-600)' }} />
+                <span>Add New Product</span>
+              </button>
+              <button
+                type="button"
+                className="dropdown-item"
+                onClick={() => {
+                  setQuickActionOpen(false);
+                  onOpenQuickAction('adjustment');
+                }}
+              >
+                <RefreshCw size={16} style={{ color: 'var(--color-warning-600)' }} />
+                <span>Record Stock Adjustment</span>
+              </button>
+              <button
+                type="button"
+                className="dropdown-item"
+                onClick={() => {
+                  setQuickActionOpen(false);
+                  onOpenQuickAction('po');
+                }}
+              >
+                <ShoppingCart size={16} style={{ color: 'var(--color-info-600)' }} />
+                <span>Create Purchase Order</span>
+              </button>
+              <button
+                type="button"
+                className="dropdown-item"
+                onClick={() => {
+                  setQuickActionOpen(false);
+                  onOpenQuickAction('so');
+                }}
+              >
+                <Send size={16} style={{ color: 'var(--color-success-600)' }} />
+                <span>New Sales Order</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Notifications Button */}
+        <button
+          type="button"
+          className="topbar-icon-btn"
+          onClick={onOpenNotifications}
+          aria-label="View notifications"
+          title="Notifications"
+        >
+          <Bell size={20} />
+          {unreadCount > 0 && <span className="badge-dot" />}
+        </button>
+
+        <div className="topbar-divider" />
+
+        {/* User Profile & Role Switcher */}
+        <div className="dropdown" ref={userMenuRef}>
+          <div
+            className="topbar-user"
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            role="button"
+            tabIndex={0}
+            aria-label="User account menu"
+          >
+            <div className="topbar-avatar">
+              {currentUser.avatar || 'AV'}
+            </div>
+            <div className="topbar-user-info">
+              <span className="topbar-user-name">{currentUser.name}</span>
+              <span className="topbar-user-role">{currentUser.role}</span>
+            </div>
+            <ChevronDown size={14} style={{ color: 'var(--color-neutral-400)' }} />
+          </div>
+
+          {userMenuOpen && (
+            <div className="dropdown-menu" style={{ width: '240px' }}>
+              <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--color-neutral-100)' }}>
+                <p style={{ fontSize: '11px', color: 'var(--color-neutral-400)', textTransform: 'uppercase', fontWeight: 600 }}>
+                  Signed in as
+                </p>
+                <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-neutral-900)' }}>
+                  {currentUser.email}
+                </p>
+              </div>
+
+              {/* Role Switcher for fast live testing */}
+              <div style={{ padding: '8px 12px' }}>
+                <p style={{ fontSize: '11px', color: 'var(--color-neutral-400)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>
+                  Simulate Role:
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                  {['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'].map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => {
+                        onChangeRole(role);
+                        setUserMenuOpen(false);
+                      }}
+                      className={`btn btn-xs ${currentUser.role === role ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '10px', height: '24px', padding: '0 6px', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    >
+                      {role.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="dropdown-divider" />
+
+              <button
+                type="button"
+                className="dropdown-item"
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  navigate('/settings');
+                }}
+              >
+                <Shield size={16} />
+                <span>Account Preferences</span>
+              </button>
+
+              <button
+                type="button"
+                className="dropdown-item"
+                style={{ color: 'var(--color-danger-600)' }}
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  onLogout();
+                }}
+              >
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
