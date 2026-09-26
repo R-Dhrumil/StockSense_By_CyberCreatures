@@ -26,6 +26,8 @@ import { api, authApi, productApi, warehouseApi } from './services/api';
 import { subscribeToEvent, initSocket } from './services/socket';
 import './App.css';
 
+import { DEFAULT_WAREHOUSES, matchesWarehouse } from './utils/warehouseUtils';
+
 export default function App() {
   const storedUser = api.getCurrentUser();
   const storedToken = api.getToken();
@@ -47,7 +49,7 @@ export default function App() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [products, setProducts] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
+  const [warehouses, setWarehouses] = useState(DEFAULT_WAREHOUSES);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [isWarehousesLoading, setIsWarehousesLoading] = useState(true);
 
@@ -177,12 +179,15 @@ export default function App() {
 
   // Dynamic live low stock count
   const lowStockCount = useMemo(() => {
-    return products.filter(p => 
+    const list = activeWarehouse && activeWarehouse !== 'All'
+      ? products.filter(p => matchesWarehouse(p.warehouse, activeWarehouse, warehouses))
+      : products;
+    return list.filter(p => 
       p.status === 'Low Stock' || 
       p.status === 'Out of Stock' || 
       (Number(p.availableQty ?? 0) <= Number(p.reorderLevel ?? 0))
     ).length;
-  }, [products]);
+  }, [products, activeWarehouse, warehouses]);
 
 
   const handleLoginSuccess = (user) => {
@@ -297,6 +302,10 @@ export default function App() {
                 <Dashboard
                   currentUser={currentUser}
                   onOpenQuickAction={handleQuickAction}
+                  activeWarehouse={activeWarehouse}
+                  onChangeWarehouse={setActiveWarehouse}
+                  products={products}
+                  warehouses={warehouses}
                 />
               }
             />
@@ -310,6 +319,8 @@ export default function App() {
                   onNotify={addToast}
                   currentUser={currentUser}
                   isLoading={isProductsLoading}
+                  activeWarehouse={activeWarehouse}
+                  onChangeWarehouse={setActiveWarehouse}
                 />
               }
             />
@@ -355,20 +366,45 @@ export default function App() {
                   setProducts={setProducts}
                   warehouses={warehouses}
                   currentUser={currentUser}
+                  activeWarehouse={activeWarehouse}
+                  onChangeWarehouse={setActiveWarehouse}
                 />
               }
             />
             <Route
               path="/sales-orders"
-              element={<SalesOrders onNotify={addToast} currentUser={currentUser} />}
+              element={
+                <SalesOrders 
+                  onNotify={addToast} 
+                  currentUser={currentUser} 
+                  activeWarehouse={activeWarehouse}
+                  onChangeWarehouse={setActiveWarehouse}
+                  warehouses={warehouses}
+                />
+              }
             />
             <Route
               path="/movements"
-              element={<StockMovements onNotify={addToast} currentUser={currentUser} />}
+              element={
+                <StockMovements 
+                  onNotify={addToast} 
+                  currentUser={currentUser} 
+                  activeWarehouse={activeWarehouse}
+                  onChangeWarehouse={setActiveWarehouse}
+                  warehouses={warehouses}
+                />
+              }
             />
             <Route
               path="/reports"
-              element={<Reports onNotify={addToast} currentUser={currentUser} />}
+              element={
+                <Reports 
+                  onNotify={addToast} 
+                  currentUser={currentUser} 
+                  activeWarehouse={activeWarehouse}
+                  onChangeWarehouse={setActiveWarehouse}
+                />
+              }
             />
             <Route
               path="/users"

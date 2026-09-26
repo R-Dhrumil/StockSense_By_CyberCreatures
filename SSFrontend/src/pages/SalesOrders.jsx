@@ -27,12 +27,19 @@ import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import KpiCard from '../components/common/KpiCard';
 
-import { hasPermission } from '../utils/permissions';
-import { operationApi, productApi } from '../services/api';
+import { matchesWarehouse, DEFAULT_WAREHOUSES } from '../utils/warehouseUtils';
 
-export default function SalesOrders({ onNotify, currentUser }) {
+export default function SalesOrders({
+  onNotify,
+  currentUser,
+  activeWarehouse = 'All',
+  onChangeWarehouse,
+  warehouses = []
+}) {
   const canCreateDeliveries = hasPermission.canCreateDeliveries(currentUser?.role);
   const location = useLocation();
+
+  const facilityList = warehouses && warehouses.length > 0 ? warehouses : DEFAULT_WAREHOUSES;
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -281,12 +288,22 @@ export default function SalesOrders({ onNotify, currentUser }) {
     }
   };
 
+  // Filter orders by active warehouse
+  const displayedOrders = useMemo(() => {
+    if (!activeWarehouse || activeWarehouse === 'All') return orders;
+    return orders.filter(o => 
+      matchesWarehouse(o.destination, activeWarehouse, facilityList) ||
+      matchesWarehouse(o.warehouse, activeWarehouse, facilityList) ||
+      matchesWarehouse(o.sourceLocationName, activeWarehouse, facilityList)
+    );
+  }, [orders, activeWarehouse, facilityList]);
+
   // Metrics Calculation
-  const totalCount = orders.length;
-  const waitingCount = orders.filter(o => ['WAITING', 'Pending', 'DRAFT'].includes(o.fulfillmentStatus)).length;
-  const readyCount = orders.filter(o => ['READY', 'Allocated'].includes(o.fulfillmentStatus)).length;
-  const packedCount = orders.filter(o => ['PACKED', 'Picked'].includes(o.fulfillmentStatus)).length;
-  const doneCount = orders.filter(o => ['DONE', 'Dispatched', 'Delivered'].includes(o.fulfillmentStatus)).length;
+  const totalCount = displayedOrders.length;
+  const waitingCount = displayedOrders.filter(o => ['WAITING', 'Pending', 'DRAFT'].includes(o.fulfillmentStatus)).length;
+  const readyCount = displayedOrders.filter(o => ['READY', 'Allocated'].includes(o.fulfillmentStatus)).length;
+  const packedCount = displayedOrders.filter(o => ['PACKED', 'Picked'].includes(o.fulfillmentStatus)).length;
+  const doneCount = displayedOrders.filter(o => ['DONE', 'Dispatched', 'Delivered'].includes(o.fulfillmentStatus)).length;
 
   // Table Columns
   const columns = [
@@ -507,6 +524,37 @@ export default function SalesOrders({ onNotify, currentUser }) {
         </div>
       </div>
 
+      {/* Active Warehouse Banner */}
+      {activeWarehouse && activeWarehouse !== 'All' && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'rgba(232, 137, 78, 0.08)',
+          border: '1px solid rgba(232, 137, 78, 0.25)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-primary-700)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Warehouse size={16} style={{ color: 'var(--color-primary-600)' }} />
+            <span>
+              Showing outbound customer deliveries for <strong>{activeWarehouse}</strong>
+            </span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => onChangeWarehouse?.('All')}
+            style={{ fontSize: '11px', padding: '4px 10px', height: 'auto' }}
+          >
+            Show All Warehouses
+          </button>
+        </div>
+      )}
+
       {/* Pipeline Status Metric KPI Cards */}
       <div className="kpi-grid">
         <KpiCard
@@ -553,7 +601,7 @@ export default function SalesOrders({ onNotify, currentUser }) {
       {/* Main Table */}
       <DataTable
         columns={columns}
-        data={orders}
+        data={displayedOrders}
         searchPlaceholder="Search by delivery number, customer name, destination, tracking..."
         filterOptions={filterOptions}
         filterKey="fulfillmentStatus"

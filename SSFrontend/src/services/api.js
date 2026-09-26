@@ -198,6 +198,10 @@ export const productApi = {
   deleteProduct: async (id) => {
     return await api.delete(`/products/${id}`);
   },
+
+  bulkImport: async (products) => {
+    return await api.post('/products/bulk-import', { products });
+  },
 };
 
 // Category Service Endpoints
@@ -222,6 +226,10 @@ export const categoryApi = {
 // Warehouse & Location Service Endpoints
 export const warehouseApi = {
   getWarehouses: async () => {
+    return await api.get('/warehouses');
+  },
+
+  getAll: async () => {
     return await api.get('/warehouses');
   },
 
@@ -395,8 +403,12 @@ export const exportApi = {
 
 // Dashboard Metrics & Dynamic Multi-Filter Service Endpoints
 export const dashboardApi = {
-  getMetrics: async () => {
-    return await api.get('/dashboard/metrics');
+  getMetrics: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/dashboard/metrics?${queryStr}` : '/dashboard/metrics';
+    return await api.get(endpoint);
   },
 
   getOperationsSummary: async (params = {}) => {

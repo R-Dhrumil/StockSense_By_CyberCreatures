@@ -107,10 +107,11 @@ export default function Topbar({
             ))
           ) : (
             <>
-              <option value="West Coast Hub">West Coast Hub (Oakland)</option>
-              <option value="Central Logistics Hub">Central Logistics (Dallas)</option>
-              <option value="East Coast Dist">East Coast Dist (Allentown)</option>
-              <option value="Southern Regional Depot">Southern Depot (Atlanta)</option>
+              <option value="Main Central Hub">Main Central Hub (WH-MAIN)</option>
+              <option value="Production Facility East">Production Facility East (WH-PROD)</option>
+              <option value="Southern Logistics Depot">Southern Logistics Depot (WH-SOUTH)</option>
+              <option value="West Coast Distribution">West Coast Distribution (WH-WEST)</option>
+              <option value="European Gateway Hub">European Gateway Hub (WH-EUR)</option>
             </>
           )}
         </select>

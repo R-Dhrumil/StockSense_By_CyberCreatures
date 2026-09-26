@@ -27,8 +27,18 @@ import Drawer from '../components/common/Drawer';
 import KpiCard from '../components/common/KpiCard';
 import { hasPermission } from '../utils/permissions';
 
-export default function PurchaseOrders({ onNotify, products, setProducts, warehouses = [], currentUser }) {
-  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : [];
+import { matchesWarehouse, DEFAULT_WAREHOUSES } from '../utils/warehouseUtils';
+
+export default function PurchaseOrders({
+  onNotify,
+  products,
+  setProducts,
+  warehouses = [],
+  currentUser,
+  activeWarehouse = 'All',
+  onChangeWarehouse
+}) {
+  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : DEFAULT_WAREHOUSES;
   const SUPPLIER_LIST = ['Apex Dynamics Corp', 'LuminoTech Precision', 'Vortex Flow Systems', 'ElectroCore Global', 'Titanium Mechanical Inc'];
   const canCreateReceipts = hasPermission.canCreateReceipts(currentUser?.role);
   const canValidateReceipts = hasPermission.canValidateReceipts(currentUser?.role);
@@ -53,11 +63,17 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
   const [ledgerLogs, setLedgerLogs] = useState([]);
   const [loadingLedger, setLoadingLedger] = useState(false);
 
+  // Filter orders by active warehouse
+  const displayedOrders = useMemo(() => {
+    if (!activeWarehouse || activeWarehouse === 'All') return orders;
+    return orders.filter(o => matchesWarehouse(o.warehouse || o.warehouseName, activeWarehouse, facilityList));
+  }, [orders, activeWarehouse, facilityList]);
+
   // New PO / Receipt Form State
   const [newPo, setNewPo] = useState({
     supplier: SUPPLIER_LIST[0],
     warehouseId: facilityList[0]?.id || '',
-    warehouseName: facilityList[0]?.name || 'Main Central Hub',
+    warehouseName: (activeWarehouse && activeWarehouse !== 'All') ? activeWarehouse : (facilityList[0]?.name || 'Main Central Hub'),
     locationId: '',
     expectedDelivery: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
     notes: '',
@@ -660,32 +676,63 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
         </div>
       </div>
 
+      {/* Active Warehouse Banner */}
+      {activeWarehouse && activeWarehouse !== 'All' && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'rgba(232, 137, 78, 0.08)',
+          border: '1px solid rgba(232, 137, 78, 0.25)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-primary-700)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Warehouse size={16} style={{ color: 'var(--color-primary-600)' }} />
+            <span>
+              Showing inbound purchase orders for <strong>{activeWarehouse}</strong>
+            </span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => onChangeWarehouse?.('All')}
+            style={{ fontSize: '11px', padding: '4px 10px', height: 'auto' }}
+          >
+            Show All Warehouses
+          </button>
+        </div>
+      )}
+
       {/* KPI Summary Cards */}
       <div className="kpi-grid">
         <KpiCard
           title="Total Inbound"
-          value={orders.length}
+          value={displayedOrders.length}
           subtext="Active vendor receipts"
           icon={ShoppingCart}
           variant="primary"
         />
         <KpiCard
           title="1. Pending Receipt"
-          value={orders.filter(o => o.status === 'Ordered' || o.status === 'Draft' || o.rawStatus === 'READY' || o.rawStatus === 'DRAFT').length}
+          value={displayedOrders.filter(o => o.status === 'Ordered' || o.status === 'Draft' || o.rawStatus === 'READY' || o.rawStatus === 'DRAFT').length}
           subtext="Awaiting vendor delivery"
           icon={Clock}
           variant="warning"
         />
         <KpiCard
           title="2. Partial Inbound"
-          value={orders.filter(o => o.status === 'Partially Received').length}
+          value={displayedOrders.filter(o => o.status === 'Partially Received').length}
           subtext="Goods partially accepted"
           icon={Truck}
           variant="info"
         />
         <KpiCard
           title="3. Received & Stocked"
-          value={orders.filter(o => o.status === 'Received' || o.rawStatus === 'DONE').length}
+          value={displayedOrders.filter(o => o.status === 'Received' || o.rawStatus === 'DONE').length}
           subtext="Validated in inventory ledger"
           icon={CheckCircle2}
           variant="success"
@@ -695,7 +742,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
       {/* Receipts Data Table */}
       <DataTable
         columns={columns}
-        data={orders}
+        data={displayedOrders}
         searchPlaceholder="Search by receipt #, vendor name, or target warehouse..."
       />
 
