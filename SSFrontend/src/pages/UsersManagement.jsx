@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   Plus,
@@ -22,12 +22,14 @@ import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import { INITIAL_USERS, ROLE_PERMISSIONS_MATRIX } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
+import { userApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 export default function UsersManagement({ onNotify, currentUser }) {
   const navigate = useNavigate();
   const canManageUsers = hasPermission.canManageUsers(currentUser?.role);
   const [users, setUsers] = useState(INITIAL_USERS);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'permissions'
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteData, setInviteData] = useState({
@@ -37,6 +39,33 @@ export default function UsersManagement({ onNotify, currentUser }) {
     department: 'Central Fulfillment',
     location: 'Oakland, CA'
   });
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      const res = await userApi.getUsers();
+      if (res?.data?.users && res.data.users.length > 0) {
+        setUsers(res.data.users.map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role === 'ADMIN' ? 'Admin' : u.role === 'INVENTORY_MANAGER' ? 'Inventory Manager' : 'Warehouse Staff',
+          department: u.department || 'Warehouse',
+          status: u.isActive !== false ? 'Active' : 'Inactive',
+          lastActive: 'Active recently',
+          avatar: (u.name || 'US').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+        })));
+      }
+    } catch (err) {
+      console.warn('Backend users fallback to initial list:', err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!canManageUsers) {
     return (
@@ -60,22 +89,30 @@ export default function UsersManagement({ onNotify, currentUser }) {
     );
   }
 
-  const handleSendInvite = (e) => {
+  const handleSendInvite = async (e) => {
     e.preventDefault();
     if (!inviteData.name || !inviteData.email) return;
 
-    const initials = inviteData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    const newUser = {
-      id: `USR-0${users.length + 1}`,
-      ...inviteData,
-      status: 'Pending',
-      lastActive: 'Invitation Sent',
-      avatar: initials || 'US'
-    };
-
-    setUsers([...users, newUser]);
-    setIsInviteModalOpen(false);
-    onNotify('Invitation Dispatched', `Sent activation link to ${newUser.email} with ${newUser.role} privileges.`, 'success');
+    try {
+      const backendRole = inviteData.role.includes('Admin')
+        ? 'ADMIN'
+        : inviteData.role.includes('Inventory')
+        ? 'INVENTORY_MANAGER'
+        : 'STAFF';
+      const tempPass = 'StockSense@' + Math.floor(1000 + Math.random() * 9000);
+      await userApi.createUser({
+        name: inviteData.name,
+        email: inviteData.email,
+        password: tempPass,
+        role: backendRole,
+        department: inviteData.department
+      });
+      fetchUsers();
+      setIsInviteModalOpen(false);
+      onNotify('User Enrolled', `Created ${inviteData.name} in DB. Temporary pass: ${tempPass}`, 'success');
+    } catch (err) {
+      alert(err.message || 'Failed to create user in database');
+    }
   };
 
   const columns = [

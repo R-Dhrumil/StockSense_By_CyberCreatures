@@ -60,7 +60,8 @@ const renderProductIcon = (iconKey) => {
   return <Comp size={16} />;
 };
 
-export default function Products({ products, setProducts, onNotify, currentUser }) {
+export default function Products({ products, setProducts, onNotify, warehouses = INITIAL_WAREHOUSES, currentUser }) {
+  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : INITIAL_WAREHOUSES;
   const canManageProducts = hasPermission.canManageProducts(currentUser?.role);
   const location = useLocation();
   const [selectedRows, setSelectedRows] = useState([]);
@@ -782,8 +783,8 @@ export default function Products({ products, setProducts, onNotify, currentUser 
                 value={formData.warehouse}
                 onChange={(e) => setFormData({ ...formData, warehouse: e.target.value })}
               >
-                {INITIAL_WAREHOUSES.map(wh => (
-                  <option key={wh.id} value={wh.name}>{wh.name} ({wh.location})</option>
+                {facilityList.map(wh => (
+                  <option key={wh.id} value={wh.name}>{wh.name} ({wh.location || wh.address || wh.code})</option>
                 ))}
               </select>
             </div>

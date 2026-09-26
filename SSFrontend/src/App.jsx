@@ -22,7 +22,7 @@ import UsersManagement from './pages/UsersManagement';
 import Settings from './pages/Settings';
 
 import { INITIAL_PRODUCTS, DEFAULT_NOTIFICATIONS, INITIAL_WAREHOUSES } from './data/mockData';
-import { api, authApi, productApi } from './services/api';
+import { api, authApi, productApi, warehouseApi } from './services/api';
 import './App.css';
 
 export default function App() {
@@ -46,6 +46,7 @@ export default function App() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [warehouses, setWarehouses] = useState(INITIAL_WAREHOUSES);
 
   // Fetch live products on startup to ensure accurate stock alerts across all components
   useEffect(() => {
@@ -58,6 +59,16 @@ export default function App() {
         })
         .catch(err => {
           console.warn('Initial products fetch in App fallback:', err.message);
+        });
+
+      warehouseApi.getWarehouses()
+        .then(res => {
+          if (res?.data?.warehouses && res.data.warehouses.length > 0) {
+            setWarehouses(res.data.warehouses);
+          }
+        })
+        .catch(err => {
+          console.warn('Initial warehouses fetch in App fallback:', err.message);
         });
     }
   }, [isAuthenticated]);
@@ -186,7 +197,7 @@ export default function App() {
           onOpenNotifications={() => setIsNotificationOpen(true)}
           unreadCount={unreadCount}
           onOpenQuickAction={handleQuickAction}
-          warehouseList={INITIAL_WAREHOUSES}
+          warehouseList={warehouses}
         />
 
         {/* Dynamic Route Content */}
@@ -208,6 +219,7 @@ export default function App() {
                 <Products
                   products={products}
                   setProducts={setProducts}
+                  warehouses={warehouses}
                   onNotify={addToast}
                   currentUser={currentUser}
                 />
@@ -223,6 +235,7 @@ export default function App() {
                 <Inventory
                   products={products}
                   setProducts={setProducts}
+                  warehouses={warehouses}
                   onNotify={addToast}
                   activeWarehouse={activeWarehouse}
                   onChangeWarehouse={setActiveWarehouse}
@@ -245,6 +258,7 @@ export default function App() {
                   onNotify={addToast}
                   products={products}
                   setProducts={setProducts}
+                  warehouses={warehouses}
                   currentUser={currentUser}
                 />
               }

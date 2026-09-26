@@ -21,7 +21,8 @@ import Drawer from '../components/common/Drawer';
 import { INITIAL_PURCHASE_ORDERS, INITIAL_SUPPLIERS, INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
 
-export default function PurchaseOrders({ onNotify, products, setProducts, currentUser }) {
+export default function PurchaseOrders({ onNotify, products, setProducts, warehouses = INITIAL_WAREHOUSES, currentUser }) {
+  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : INITIAL_WAREHOUSES;
   const canCreateReceipts = hasPermission.canCreateReceipts(currentUser?.role);
   const canValidateReceipts = hasPermission.canValidateReceipts(currentUser?.role);
   const location = useLocation();
@@ -432,7 +433,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts, curren
                   value={newPo.warehouse}
                   onChange={(e) => setNewPo({ ...newPo, warehouse: e.target.value })}
                 >
-                  {INITIAL_WAREHOUSES.map(w => (
+                  {facilityList.map(w => (
                     <option key={w.id} value={w.name}>{w.name}</option>
                   ))}
                 </select>

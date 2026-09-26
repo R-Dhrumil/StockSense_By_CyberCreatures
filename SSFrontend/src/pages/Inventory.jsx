@@ -22,7 +22,8 @@ import Modal from '../components/common/Modal';
 import { INITIAL_WAREHOUSES } from '../data/mockData';
 import { hasPermission, normalizeRole, ROLES } from '../utils/permissions';
 
-export default function Inventory({ products, setProducts, onNotify, activeWarehouse, onChangeWarehouse, currentUser }) {
+export default function Inventory({ products, setProducts, onNotify, activeWarehouse, onChangeWarehouse, warehouses = INITIAL_WAREHOUSES, currentUser }) {
+  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : INITIAL_WAREHOUSES;
   const currentRole = normalizeRole(currentUser?.role);
   const isStaff = currentRole === ROLES.STAFF;
   const canValidateAdjustments = hasPermission.canValidateAdjustments(currentUser?.role);
@@ -435,7 +436,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
               >
                 All Facilities
               </button>
-              {INITIAL_WAREHOUSES.map(wh => (
+              {facilityList.map(wh => (
                 <button
                   key={wh.id}
                   type="button"
@@ -528,7 +529,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
                 value={adjustData.warehouse}
                 onChange={(e) => setAdjustData({ ...adjustData, warehouse: e.target.value })}
               >
-                {INITIAL_WAREHOUSES.map(wh => (
+                {facilityList.map(wh => (
                   <option key={wh.id} value={wh.name}>{wh.name}</option>
                 ))}
               </select>
@@ -644,7 +645,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
                 value={transferData.sourceWarehouse}
                 onChange={(e) => setTransferData({ ...transferData, sourceWarehouse: e.target.value })}
               >
-                {INITIAL_WAREHOUSES.map(wh => (
+                {facilityList.map(wh => (
                   <option key={wh.id} value={wh.name}>{wh.name}</option>
                 ))}
               </select>
@@ -657,7 +658,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
                 value={transferData.destWarehouse}
                 onChange={(e) => setTransferData({ ...transferData, destWarehouse: e.target.value })}
               >
-                {INITIAL_WAREHOUSES.map(wh => (
+                {facilityList.map(wh => (
                   <option key={wh.id} value={wh.name}>{wh.name}</option>
                 ))}
               </select>
