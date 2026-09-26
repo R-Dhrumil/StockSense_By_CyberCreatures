@@ -4,7 +4,7 @@ import { sendEmail } from '../utils/email.js';
 import { lowStockAlertEmailTemplate } from '../utils/emailTemplates.js';
 import { broadcastEvent } from './socket.service.js';
 import { logger } from '../utils/logger.js';
-import { query } from '../database/db.js';
+import { query } from '../config/db.js';
 
 // In-memory cache to prevent duplicate email storms within 5 minutes for the same product+warehouse
 const alertDebounceMap = new Map();

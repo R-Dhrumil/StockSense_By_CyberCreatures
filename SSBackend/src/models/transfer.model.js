@@ -97,7 +97,7 @@ export class Transfer {
         FROM operations o
         LEFT JOIN locations sl ON sl.id = o.source_location_id
         LEFT JOIN locations dl ON dl.id = o.dest_location_id
-        LEFT JOIN warehouses w ON (w.id = dl.warehouse_id OR w.id = sl.warehouse_id OR w.id = o.warehouse_id)
+        LEFT JOIN warehouses w ON (w.id = dl.warehouse_id OR w.id = sl.warehouse_id)
         LEFT JOIN operation_items oi ON oi.operation_id = o.id
         ${whereClause}
         GROUP BY o.id, sl.name, sl.code, dl.name, dl.code, w.name
@@ -147,7 +147,7 @@ export class Transfer {
         FROM operations o
         LEFT JOIN locations sl ON sl.id = o.source_location_id
         LEFT JOIN locations dl ON dl.id = o.dest_location_id
-        LEFT JOIN warehouses w ON (w.id = dl.warehouse_id OR w.id = sl.warehouse_id OR w.id = o.warehouse_id)
+        LEFT JOIN warehouses w ON (w.id = dl.warehouse_id OR w.id = sl.warehouse_id)
         WHERE o.id = $1 OR o.operation_number = $1
       `;
       const res = await query(text, [id]);
