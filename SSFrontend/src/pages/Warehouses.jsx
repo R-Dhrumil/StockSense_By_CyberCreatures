@@ -28,13 +28,13 @@ import {
 import Modal from '../components/common/Modal';
 import Drawer from '../components/common/Drawer';
 import StatusBadge from '../components/common/StatusBadge';
-import { INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
+
 import { hasPermission } from '../utils/permissions';
 import { warehouseApi } from '../services/api';
 
 export default function Warehouses({ onNotify, currentUser, isLoading: externalLoading }) {
   const canManageWarehouses = hasPermission.canManageWarehouses(currentUser?.role);
-  const [warehouses, setWarehouses] = useState(INITIAL_WAREHOUSES);
+  const [warehouses, setWarehouses] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const isDataLoading = isLoading || Boolean(externalLoading);
   const [viewMode, setViewMode] = useState('grid');

@@ -26,13 +26,7 @@ import {
   Legend
 } from 'recharts';
 import KpiCard from '../components/common/KpiCard';
-import {
-  DASHBOARD_TREND_DATA,
-  STOCK_AGING_DATA,
-  TOP_MOVING_PRODUCTS,
-  INITIAL_WAREHOUSES,
-  INITIAL_CATEGORIES
-} from '../data/mockData';
+
 import { hasPermission } from '../utils/permissions';
 import { useNavigate } from 'react-router-dom';
 
@@ -42,6 +36,35 @@ export default function Reports({ onNotify, currentUser }) {
   const [activeReportTab, setActiveReportTab] = useState('valuation');
   const [selectedHub, setSelectedHub] = useState('All');
   const [dateFilter, setDateFilter] = useState('Quarter to Date');
+
+  // Inline chart/report data (replace with API calls when analytics endpoints are ready)
+  const DASHBOARD_TREND_DATA = [
+    { month: 'Apr', purchase: 62000, sales: 84000 },
+    { month: 'May', purchase: 74000, sales: 91000 },
+    { month: 'Jun', purchase: 58000, sales: 88000 },
+    { month: 'Jul', purchase: 91000, sales: 112000 },
+    { month: 'Aug', purchase: 68000, sales: 97000 },
+    { month: 'Sep', purchase: 82000, sales: 124000 },
+  ];
+
+  const STOCK_AGING_DATA = [
+    { tier: '0–30 Days', count: 142, value: 62400, color: '#22c55e' },
+    { tier: '31–60 Days', count: 88, value: 38200, color: '#f59e0b' },
+    { tier: '61–90 Days', count: 45, value: 19800, color: '#f97316' },
+    { tier: '90+ Days', count: 22, value: 9800, color: '#ef4444' },
+  ];
+
+  const TOP_MOVING_PRODUCTS = [
+    { name: 'Industrial Torque Sensor TS-90', sku: 'SEN-TRQ-90', moved: 142, value: 349 },
+    { name: 'Precision Stepper Motor 24V', sku: 'MOT-STP-24', moved: 85, value: 89.5 },
+    { name: 'Industrial Ethernet Switch', sku: 'NET-SWT-08', moved: 195, value: 275 },
+    { name: 'Brushless DC Servo Drive 48V', sku: 'DRV-BLDC-48', moved: 110, value: 430 },
+    { name: 'Carbon Steel Round Rods', sku: 'STL-ROD-01', moved: 260, value: 45 },
+  ];
+
+  const INITIAL_WAREHOUSES = [];
+  const INITIAL_CATEGORIES = [];
+
 
   if (!canViewReports) {
     return (

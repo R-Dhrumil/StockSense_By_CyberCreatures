@@ -18,7 +18,7 @@ import {
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
-import { INITIAL_STOCK_MOVEMENTS } from '../data/mockData';
+
 import { normalizeRole } from '../utils/permissions';
 import { ledgerApi } from '../services/api';
 
@@ -51,12 +51,11 @@ export default function StockMovements({ onNotify, currentUser }) {
         }));
         setMovements(formatted);
       } else {
-        // Fallback to initial mock if empty
-        setMovements(INITIAL_STOCK_MOVEMENTS);
+        setMovements([]);
       }
     } catch (err) {
-      console.warn('Backend ledger offline or error, using mock data:', err.message);
-      setMovements(INITIAL_STOCK_MOVEMENTS);
+      console.warn('Backend ledger unavailable:', err.message);
+      setMovements([]);
     } finally {
       setLoading(false);
     }

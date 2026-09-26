@@ -20,7 +20,7 @@ import {
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
-import { INITIAL_USERS, ROLE_PERMISSIONS_MATRIX } from '../data/mockData';
+
 import { hasPermission } from '../utils/permissions';
 import { userApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -28,8 +28,21 @@ import { useNavigate } from 'react-router-dom';
 export default function UsersManagement({ onNotify, currentUser }) {
   const navigate = useNavigate();
   const canManageUsers = hasPermission.canManageUsers(currentUser?.role);
-  const [users, setUsers] = useState(INITIAL_USERS);
+  const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const ROLE_PERMISSIONS_MATRIX = [
+    { module: 'Products & Catalog', admin: 'Full Control', manager: 'View & Edit', staff: 'View Only' },
+    { module: 'Inventory & Stock', admin: 'Full Control', manager: 'Full Control', staff: 'View Only' },
+    { module: 'Warehouses & Locations', admin: 'Full Control', manager: 'View & Edit', staff: 'View Only' },
+    { module: 'Purchase Orders & Receipts', admin: 'Full Control', manager: 'Full Control', staff: 'Create Only' },
+    { module: 'Sales Orders & Deliveries', admin: 'Full Control', manager: 'Full Control', staff: 'Create Only' },
+    { module: 'Internal Transfers', admin: 'Full Control', manager: 'Full Control', staff: 'Request Only' },
+    { module: 'Stock Adjustments', admin: 'Full Control', manager: 'Validate', staff: 'Request Only' },
+    { module: 'Financial & Valuation Reports', admin: 'Full Control', manager: 'View & Export', staff: 'No Access' },
+    { module: 'User Management', admin: 'Full Control', manager: 'No Access', staff: 'No Access' },
+    { module: 'Suppliers & Vendors', admin: 'Full Control', manager: 'View & Edit', staff: 'View Only' },
+  ];
   const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'permissions'
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteData, setInviteData] = useState({

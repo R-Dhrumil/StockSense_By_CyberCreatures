@@ -25,7 +25,7 @@ import {
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
-import { INITIAL_SALES_ORDERS, INITIAL_PRODUCTS } from '../data/mockData';
+
 import { hasPermission } from '../utils/permissions';
 import { operationApi, productApi } from '../services/api';
 
@@ -61,10 +61,10 @@ export default function SalesOrders({ onNotify, currentUser }) {
       if (res?.data?.products && res.data.products.length > 0) {
         setProductsCatalog(res.data.products);
       } else {
-        setProductsCatalog(INITIAL_PRODUCTS);
+        setProductsCatalog([]);
       }
     } catch {
-      setProductsCatalog(INITIAL_PRODUCTS);
+      setProductsCatalog([]);
     }
   }, []);
 
@@ -91,26 +91,11 @@ export default function SalesOrders({ onNotify, currentUser }) {
         }));
         setOrders(formatted);
       } else {
-        // Fallback to initial mock if backend has no records yet
-        setOrders(INITIAL_SALES_ORDERS.map(o => ({
-          ...o,
-          rawId: o.id,
-          fulfillmentStatus: o.fulfillmentStatus === 'Pending' ? 'WAITING' :
-                             o.fulfillmentStatus === 'Allocated' ? 'READY' :
-                             o.fulfillmentStatus === 'Picked' ? 'PACKED' :
-                             o.fulfillmentStatus === 'Dispatched' || o.fulfillmentStatus === 'Delivered' ? 'DONE' : o.fulfillmentStatus
-        })));
+        setOrders([]);
       }
     } catch (err) {
-      console.warn('Backend offline or error, using mock data:', err.message);
-      setOrders(INITIAL_SALES_ORDERS.map(o => ({
-        ...o,
-        rawId: o.id,
-        fulfillmentStatus: o.fulfillmentStatus === 'Pending' ? 'WAITING' :
-                           o.fulfillmentStatus === 'Allocated' ? 'READY' :
-                           o.fulfillmentStatus === 'Picked' ? 'PACKED' :
-                           o.fulfillmentStatus === 'Dispatched' || o.fulfillmentStatus === 'Delivered' ? 'DONE' : o.fulfillmentStatus
-      })));
+      console.warn('Backend deliveries unavailable:', err.message);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
