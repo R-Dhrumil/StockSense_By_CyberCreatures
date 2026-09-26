@@ -426,7 +426,7 @@ export default function Warehouses({ onNotify }) {
                     <span>{wh.locationCount || wh.totalProducts || 4} Sub-Locations & Racks</span>
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--color-success-50)', color: 'var(--color-success-700)', padding: '3px 8px', borderRadius: 'var(--radius-full)' }}>
-                    <DollarSign size={12} />
+                    <IndianRupee size={12} />
                     <span>${(wh.inventoryValue || 0).toLocaleString()} Stored</span>
                   </span>
                 </div>
