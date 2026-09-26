@@ -47,10 +47,13 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [warehouses, setWarehouses] = useState(INITIAL_WAREHOUSES);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [isWarehousesLoading, setIsWarehousesLoading] = useState(true);
 
   // Fetch live products on startup to ensure accurate stock alerts across all components
   useEffect(() => {
     if (isAuthenticated) {
+      setIsProductsLoading(true);
       productApi.getProducts()
         .then(res => {
           if (res?.data?.products && res.data.products.length > 0) {
@@ -59,8 +62,12 @@ export default function App() {
         })
         .catch(err => {
           console.warn('Initial products fetch in App fallback:', err.message);
+        })
+        .finally(() => {
+          setIsProductsLoading(false);
         });
 
+      setIsWarehousesLoading(true);
       warehouseApi.getWarehouses()
         .then(res => {
           if (res?.data?.warehouses && res.data.warehouses.length > 0) {
@@ -69,7 +76,13 @@ export default function App() {
         })
         .catch(err => {
           console.warn('Initial warehouses fetch in App fallback:', err.message);
+        })
+        .finally(() => {
+          setIsWarehousesLoading(false);
         });
+    } else {
+      setIsProductsLoading(false);
+      setIsWarehousesLoading(false);
     }
   }, [isAuthenticated]);
 
@@ -222,6 +235,7 @@ export default function App() {
                   warehouses={warehouses}
                   onNotify={addToast}
                   currentUser={currentUser}
+                  isLoading={isProductsLoading}
                 />
               }
             />
@@ -240,12 +254,19 @@ export default function App() {
                   activeWarehouse={activeWarehouse}
                   onChangeWarehouse={setActiveWarehouse}
                   currentUser={currentUser}
+                  isLoading={isProductsLoading}
                 />
               }
             />
             <Route
               path="/warehouses"
-              element={<Warehouses onNotify={addToast} currentUser={currentUser} />}
+              element={
+                <Warehouses 
+                  onNotify={addToast} 
+                  currentUser={currentUser} 
+                  isLoading={isWarehousesLoading}
+                />
+              }
             />
             <Route
               path="/suppliers"

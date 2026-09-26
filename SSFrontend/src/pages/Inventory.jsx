@@ -19,17 +19,31 @@ import {
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
-import { INITIAL_WAREHOUSES } from '../data/mockData';
 import { hasPermission, normalizeRole, ROLES } from '../utils/permissions';
 
-export default function Inventory({ products, setProducts, onNotify, activeWarehouse, onChangeWarehouse, warehouses = INITIAL_WAREHOUSES, currentUser }) {
-  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : INITIAL_WAREHOUSES;
+export default function Inventory({ 
+  products = [], 
+  setProducts, 
+  onNotify, 
+  activeWarehouse, 
+  onChangeWarehouse, 
+  warehouses = [], 
+  currentUser,
+  isLoading = false 
+}) {
+  const facilityList = warehouses && warehouses.length > 0 ? warehouses : [];
   const currentRole = normalizeRole(currentUser?.role);
   const isStaff = currentRole === ROLES.STAFF;
   const canValidateAdjustments = hasPermission.canValidateAdjustments(currentUser?.role);
   const [selectedWarehouse, setSelectedWarehouse] = useState(activeWarehouse || 'All');
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+  // Dynamic default facility resolvers
+  const defaultFacility = activeWarehouse && activeWarehouse !== 'All' 
+    ? activeWarehouse 
+    : (facilityList[0]?.name || '');
+  const defaultDestFacility = facilityList.find(w => w.name !== defaultFacility)?.name || facilityList[1]?.name || defaultFacility;
 
   // Sync facility view whenever activeWarehouse changes in Topbar
   useEffect(() => {
@@ -41,13 +55,38 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
   // Adjustment form state
   const [adjustData, setAdjustData] = useState({
     productId: '',
-    warehouse: 'West Coast Hub',
+    warehouse: '',
     mode: 'add', // 'add' | 'subtract' | 'exact'
     quantity: 5,
     reason: 'Routine Cycle Count Adjustment',
     notes: '',
     reference: `ADJ-${Date.now().toString().slice(-4)}`
   });
+
+  // Transfer form state
+  const [transferData, setTransferData] = useState({
+    productId: '',
+    sourceWarehouse: '',
+    destWarehouse: '',
+    quantity: 10,
+    trackingCode: `TRF-${Date.now().toString().slice(-4)}`,
+    notes: ''
+  });
+
+  // Update default warehouse selections when facility list or activeWarehouse changes
+  useEffect(() => {
+    if (facilityList.length > 0) {
+      setAdjustData(prev => ({
+        ...prev,
+        warehouse: prev.warehouse || defaultFacility
+      }));
+      setTransferData(prev => ({
+        ...prev,
+        sourceWarehouse: prev.sourceWarehouse || defaultFacility,
+        destWarehouse: prev.destWarehouse || defaultDestFacility
+      }));
+    }
+  }, [facilityList, activeWarehouse, defaultFacility, defaultDestFacility]);
 
   const location = useLocation();
 
@@ -56,7 +95,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
     if (location.state?.openModal === 'adjustment') {
       setAdjustData({
         productId: products[0]?.id || '',
-        warehouse: activeWarehouse !== 'All' ? activeWarehouse : 'West Coast Hub',
+        warehouse: defaultFacility,
         mode: 'add',
         quantity: 10,
         reason: 'Routine Cycle Count Adjustment',
@@ -66,29 +105,20 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
       setIsAdjustModalOpen(true);
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, products, activeWarehouse]);
+  }, [location.state, products, defaultFacility]);
 
-  // Transfer form state
-  const [transferData, setTransferData] = useState({
-    productId: '',
-    sourceWarehouse: 'West Coast Hub',
-    destWarehouse: 'Central Logistics Hub',
-    quantity: 10,
-    trackingCode: `TRF-${Date.now().toString().slice(-4)}`,
-    notes: ''
-  });
-
-  // Filter products by selected warehouse
-  const displayedProducts = products.filter(p => {
+  // Filter products by selected warehouse safely
+  const displayedProducts = (products || []).filter(p => {
+    if (!p) return false;
     if (selectedWarehouse === 'All') return true;
-    return p.warehouse.toLowerCase().includes(selectedWarehouse.toLowerCase());
+    return (p.warehouse || '').toLowerCase().includes(selectedWarehouse.toLowerCase());
   });
 
-  // Calculate high-level stock statistics
-  const totalStockOnHand = displayedProducts.reduce((sum, p) => sum + p.availableQty + p.reservedQty, 0);
-  const totalAvailable = displayedProducts.reduce((sum, p) => sum + p.availableQty, 0);
-  const totalReserved = displayedProducts.reduce((sum, p) => sum + p.reservedQty, 0);
-  const lowStockCount = displayedProducts.filter(p => p.status === 'Low Stock' || p.status === 'Out of Stock').length;
+  // Calculate high-level stock statistics safely
+  const totalStockOnHand = displayedProducts.reduce((sum, p) => sum + (Number(p.availableQty) || 0) + (Number(p.reservedQty) || 0), 0);
+  const totalAvailable = displayedProducts.reduce((sum, p) => sum + (Number(p.availableQty) || 0), 0);
+  const totalReserved = displayedProducts.reduce((sum, p) => sum + (Number(p.reservedQty) || 0), 0);
+  const lowStockCount = displayedProducts.filter(p => p.status === 'Low Stock' || p.status === 'Out of Stock' || ((Number(p.availableQty) || 0) <= (Number(p.reorderLevel) || 10))).length;
 
   // Handle guided adjustment submission
   const handlePerformAdjustment = (e) => {
@@ -282,9 +312,9 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             onClick={() => {
               setAdjustData({
                 productId: row.id,
-                warehouse: row.warehouse,
+                warehouse: row.warehouse || defaultFacility,
                 mode: isStaff ? 'exact' : 'add',
-                quantity: isStaff ? row.availableQty : 10,
+                quantity: isStaff ? (row.availableQty || 1) : 10,
                 reason: isStaff ? 'Physical Cycle Count Verification' : 'Routine Cycle Count Adjustment',
                 notes: '',
                 reference: `ADJ-${Date.now().toString().slice(-4)}`
@@ -299,11 +329,13 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             type="button"
             className="btn btn-ghost btn-xs"
             onClick={() => {
+              const srcWh = row.warehouse || defaultFacility;
+              const dstWh = facilityList.find(w => w.name !== srcWh)?.name || defaultDestFacility;
               setTransferData({
                 productId: row.id,
-                sourceWarehouse: row.warehouse,
-                destWarehouse: 'Central Logistics Hub',
-                quantity: Math.min(5, row.availableQty),
+                sourceWarehouse: srcWh,
+                destWarehouse: dstWh,
+                quantity: Math.min(5, row.availableQty || 1),
                 trackingCode: `TRF-${Date.now().toString().slice(-4)}`,
                 notes: ''
               });
@@ -341,8 +373,8 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             onClick={() => {
               setTransferData({
                 productId: products[0]?.id || '',
-                sourceWarehouse: 'West Coast Hub',
-                destWarehouse: 'Central Logistics Hub',
+                sourceWarehouse: defaultFacility,
+                destWarehouse: defaultDestFacility,
                 quantity: 5,
                 trackingCode: `TRF-${Date.now().toString().slice(-4)}`,
                 notes: ''
@@ -360,7 +392,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             onClick={() => {
               setAdjustData({
                 productId: products[0]?.id || '',
-                warehouse: 'West Coast Hub',
+                warehouse: defaultFacility,
                 mode: isStaff ? 'exact' : 'add',
                 quantity: 10,
                 reason: isStaff ? 'Physical Cycle Count Verification' : 'Routine Cycle Count Adjustment',
@@ -383,7 +415,9 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             <div className="kpi-icon primary"><Boxes size={22} /></div>
           </div>
           <div>
-            <div className="kpi-value">{totalStockOnHand.toLocaleString()}</div>
+            <div className="kpi-value">
+              {isLoading ? <div className="skeleton skeleton-text" style={{ width: 80, height: 26 }} /> : totalStockOnHand.toLocaleString()}
+            </div>
             <div className="kpi-label">Total On-Hand Units</div>
           </div>
         </div>
@@ -393,7 +427,9 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             <div className="kpi-icon success"><CheckCircle2 size={22} /></div>
           </div>
           <div>
-            <div className="kpi-value">{totalAvailable.toLocaleString()}</div>
+            <div className="kpi-value">
+              {isLoading ? <div className="skeleton skeleton-text" style={{ width: 80, height: 26 }} /> : totalAvailable.toLocaleString()}
+            </div>
             <div className="kpi-label">Free Available for Sale</div>
           </div>
         </div>
@@ -403,7 +439,9 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             <div className="kpi-icon warning"><Truck size={22} /></div>
           </div>
           <div>
-            <div className="kpi-value">{totalReserved.toLocaleString()}</div>
+            <div className="kpi-value">
+              {isLoading ? <div className="skeleton skeleton-text" style={{ width: 80, height: 26 }} /> : totalReserved.toLocaleString()}
+            </div>
             <div className="kpi-label">Reserved for Sales Orders</div>
           </div>
         </div>
@@ -413,7 +451,9 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
             <div className="kpi-icon danger"><AlertTriangle size={22} /></div>
           </div>
           <div>
-            <div className="kpi-value">{lowStockCount} SKUs</div>
+            <div className="kpi-value">
+              {isLoading ? <div className="skeleton skeleton-text" style={{ width: 80, height: 26 }} /> : `${lowStockCount} SKUs`}
+            </div>
             <div className="kpi-label">Critical or Low Stock</div>
           </div>
         </div>
@@ -463,6 +503,7 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
         columns={columns}
         data={displayedProducts}
         searchPlaceholder="Filter items by product name, SKU, or category..."
+        isLoading={isLoading}
       />
 
       {/* Guided Stock Adjustment Flow Modal */}
