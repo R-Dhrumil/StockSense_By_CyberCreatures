@@ -261,5 +261,72 @@ export const userApi = {
   },
 };
 
+// Operations (Receipts & Deliveries) Service Endpoints
+export const operationApi = {
+  // Operation 1: Receipts (Incoming Goods)
+  getReceipts: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/receipts?${queryStr}` : '/operations/receipts';
+    return await api.get(endpoint);
+  },
+
+  getReceiptById: async (id) => {
+    return await api.get(`/operations/receipts/${id}`);
+  },
+
+  createReceipt: async (receiptData) => {
+    return await api.post('/operations/receipts', receiptData);
+  },
+
+  validateReceipt: async (id, data = {}) => {
+    return await api.post(`/operations/receipts/${id}/validate`, data);
+  },
+
+  // Operation 2: Deliveries (Outgoing Customer Shipments)
+  getDeliveries: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/deliveries?${queryStr}` : '/operations/deliveries';
+    return await api.get(endpoint);
+  },
+
+  getDeliveryById: async (id) => {
+    return await api.get(`/operations/deliveries/${id}`);
+  },
+
+  createDelivery: async (deliveryData) => {
+    return await api.post('/operations/deliveries', deliveryData);
+  },
+
+  pickDelivery: async (id) => {
+    return await api.post(`/operations/deliveries/${id}/pick`, {});
+  },
+
+  packDelivery: async (id) => {
+    return await api.post(`/operations/deliveries/${id}/pack`, {});
+  },
+
+  validateDelivery: async (id, data = {}) => {
+    return await api.post(`/operations/deliveries/${id}/validate`, data);
+  },
+
+  cancelDelivery: async (id) => {
+    return await api.post(`/operations/deliveries/${id}/cancel`, {});
+  },
+
+  // Audit Ledger
+  getStockLedger: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/ledger?${queryStr}` : '/operations/ledger';
+    return await api.get(endpoint);
+  },
+};
+
 export default api;
+
 

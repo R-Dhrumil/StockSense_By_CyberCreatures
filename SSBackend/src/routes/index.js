@@ -20,3 +20,4 @@ router.use('/warehouses', warehouseRoutes);
 router.use('/operations', operationRoutes);
 
 export default router;
+

@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS operations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   operation_number VARCHAR(100) NOT NULL UNIQUE,
   type VARCHAR(50) NOT NULL CHECK (type IN ('RECEIPT', 'DELIVERY', 'INTERNAL', 'ADJUSTMENT')),
-  status VARCHAR(50) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'WAITING', 'READY', 'DONE', 'CANCELED')),
+  status VARCHAR(50) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'WAITING', 'READY', 'PACKED', 'DONE', 'CANCELED')),
   partner_name VARCHAR(255),
   source_location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
   dest_location_id UUID REFERENCES locations(id) ON DELETE SET NULL,

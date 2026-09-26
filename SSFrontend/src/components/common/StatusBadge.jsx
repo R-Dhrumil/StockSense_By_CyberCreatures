@@ -21,19 +21,19 @@ export default function StatusBadge({ status, type = 'stock', size = 'md' }) {
   let icon = null;
 
   // Stock status
-  if (['in stock', 'operational', 'active', 'delivered', 'received', 'paid'].includes(normalized)) {
+  if (['in stock', 'operational', 'active', 'delivered', 'received', 'paid', 'done'].includes(normalized)) {
     badgeClass = 'badge-success';
     icon = <CheckCircle2 size={13} className="shrink-0" />;
-  } else if (['low stock', 'near capacity', 'partially received', 'allocated', 'picked', 'pending'].includes(normalized)) {
+  } else if (['low stock', 'near capacity', 'partially received', 'allocated', 'picked', 'pending', 'ready'].includes(normalized)) {
     badgeClass = 'badge-warning';
     icon = <AlertTriangle size={13} className="shrink-0" />;
   } else if (['out of stock', 'critical', 'cancelled', 'unpaid', 'overdue'].includes(normalized)) {
     badgeClass = 'badge-danger';
     icon = <XCircle size={13} className="shrink-0" />;
-  } else if (['ordered', 'dispatched', 'in transit'].includes(normalized)) {
+  } else if (['ordered', 'dispatched', 'in transit', 'packed'].includes(normalized)) {
     badgeClass = 'badge-info';
     icon = <Truck size={13} className="shrink-0" />;
-  } else if (['draft', 'archived'].includes(normalized)) {
+  } else if (['draft', 'archived', 'waiting'].includes(normalized)) {
     badgeClass = 'badge-neutral';
     icon = <Clock size={13} className="shrink-0" />;
   } else if (['admin', 'manager', 'received goods'].includes(normalized)) {
