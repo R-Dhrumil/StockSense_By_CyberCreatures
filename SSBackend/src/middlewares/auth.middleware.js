@@ -9,10 +9,12 @@ export const authenticate = catchAsync(async (req, res, next) => {
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
   }
 
   if (!token) {
-    throw new ApiError(401, 'Authentication required. Please provide a valid Bearer token in headers.');
+    throw new ApiError(401, 'Authentication required. Please provide a valid Bearer token or auth cookie.');
   }
 
   try {

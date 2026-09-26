@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "node --watch src/server.js",
+    "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "db:init": "node scripts/init-db.js",
     "seed": "node scripts/seed.js"
@@ -14,6 +14,7 @@
     "@faker-js/faker": "^8.4.1",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.2.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
@@ -30,5 +31,8 @@
     "socket.io": "^4.7.5",
     "swagger-ui-express": "^5.0.0",
     "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

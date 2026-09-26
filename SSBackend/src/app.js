@@ -7,6 +7,7 @@ import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger.js';
+import cookieParser from 'cookie-parser';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { ApiError } from './utils/ApiError.js';
@@ -49,6 +50,7 @@ app.use('/api', limiter);
 // Request Parsers
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(cookieParser());
 
 // Request Logging
 app.use(morgan('dev'));

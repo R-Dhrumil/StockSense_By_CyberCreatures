@@ -45,6 +45,13 @@ export const register = catchAsync(async (req, res) => {
   const token = generateToken(user.id);
   const safeUser = User.sanitize(user);
 
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
   return ApiResponse.send(res, 201, { user: safeUser, token }, 'Registration successful');
 });
 
@@ -70,6 +77,13 @@ export const login = catchAsync(async (req, res) => {
 
   const token = generateToken(user.id);
   const safeUser = User.sanitize(user);
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 
   return ApiResponse.send(res, 200, { user: safeUser, token }, 'Login successful');
 });
@@ -158,6 +172,13 @@ export const verifyOtp = catchAsync(async (req, res) => {
   const token = generateToken(user.id);
   const safeUser = User.sanitize(user);
 
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
   return ApiResponse.send(
     res,
     200,
@@ -171,4 +192,16 @@ export const verifyOtp = catchAsync(async (req, res) => {
  */
 export const getMe = catchAsync(async (req, res) => {
   return ApiResponse.send(res, 200, { user: req.user }, 'Current user profile retrieved');
+});
+
+/**
+ * Logout User (Clear Auth Cookie)
+ */
+export const logout = catchAsync(async (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+  return ApiResponse.send(res, 200, null, 'Logged out successfully');
 });
