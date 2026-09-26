@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { initDB, pool } from '../src/config/db.js';
 import { User } from '../src/models/user.model.js';
 import { ROLES, ALL_ROLES } from '../src/config/roles.js';
@@ -65,19 +67,29 @@ const seedDatabase = async () => {
 
     await User.createMany(fakeUserData);
 
-    logger.success('✅ PostgreSQL (Direct SQL) seeded with rich pitch-ready mock data!\n');
+    // 4. Seed Categories & Products Catalog from SQL
+    logger.info('Seeding product categories & master catalog items...');
+    const catalogSqlPath = path.resolve(process.cwd(), 'src/database/seed_catalog.sql');
+    if (fs.existsSync(catalogSqlPath)) {
+      const catalogSql = fs.readFileSync(catalogSqlPath, 'utf8');
+      await pool.query(catalogSql);
+      logger.success('✅ Categories & Products catalog seeded successfully into PostgreSQL!');
+    }
+
+    logger.success('✅ PostgreSQL (Direct SQL) fully seeded with enterprise inventory data!\n');
 
     console.log('╔═════════════════════════════════════════════════════════════════════════════════════╗');
-    console.log('║                   🚀 STOCKSENSE HACKATHON ACCOUNTS                                  ║');
+    console.log('║                   🚀 STOCKSENSE DEMO CREDENTIALS                                    ║');
     console.log('╠═════════════════════════════════════════════════════════════════════════════════════╣');
     console.log('║ Role              │ Email                                │ Password                 ║');
     console.log('╠═══════════════════╪══════════════════════════════════════╪══════════════════════════╣');
-    console.log('║ ADMIN             │ admin@hackathon.com                  │ adminpassword123         ║');
-    console.log('║ INVENTORY_MANAGER │ inventorymanager@hackathon.com       │ userpassword123          ║');
-    console.log('║ STAFF             │ staff@hackathon.com                  │ userpassword123          ║');
+    console.log('║ ADMIN             │ admin@stocksense.io                  │ Admin@1234               ║');
+    console.log('║ INVENTORY_MANAGER │ sarah.jenkins@stocksense.io          │ Manager@1234             ║');
+    console.log('║ STAFF             │ marcus.vance@stocksense.io           │ Staff@1234               ║');
     console.log('╚═════════════════════════════════════════════════════════════════════════════════════╝');
-    console.log(`\n📊 Total Users Seeded: ${seededRoles.length + fakeUserData.length}`);
-    console.log('📌 Swagger Interactive Docs: http://localhost:5000/docs\n');
+    console.log(`\n📊 Total Users Seeded: ${3 + fakeUserData.length}`);
+    console.log('📦 Products & Categories Seeded: 8 Categories, 11 Products');
+    console.log('📌 Swagger Interactive Docs: http://localhost:5002/docs\n');
 
     await pool.end();
     process.exit(0);
