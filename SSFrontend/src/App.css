@@ -60,15 +60,20 @@
 .sidebar-logo {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-lg);
-  color: white;
+  padding: 4px;
+}
+
+.sidebar-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .sidebar-brand {
