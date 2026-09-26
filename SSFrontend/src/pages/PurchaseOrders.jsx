@@ -6,7 +6,7 @@ import {
   CheckCircle2,
   Clock,
   Calendar,
-  DollarSign,
+  IndianRupee,
   PackageCheck,
   FileText,
   Trash2,
@@ -207,7 +207,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
       accessor: 'totalAmount',
       render: (row) => (
         <span style={{ fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-          ${parseFloat(row.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ₹{parseFloat(row.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       )
     },
@@ -469,7 +469,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
                   </div>
 
                   <div>
-                    <label className="form-label" style={{ fontSize: '10px' }}>Cost/Unit ($)</label>
+                    <label className="form-label" style={{ fontSize: '10px' }}>Cost/Unit (₹)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -483,7 +483,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
                   <div>
                     <label className="form-label" style={{ fontSize: '10px' }}>Subtotal</label>
                     <div style={{ height: '34px', display: 'flex', alignItems: 'center', fontWeight: 600, fontSize: '12px' }}>
-                      ${(item.qty * item.unitCost).toFixed(2)}
+                      ₹{(item.qty * item.unitCost).toFixed(2)}
                     </div>
                   </div>
 
@@ -503,7 +503,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
             </div>
 
             <div style={{ marginTop: '16px', textAlign: 'right', fontWeight: 700, fontSize: 'var(--font-size-md)', color: 'var(--color-neutral-900)' }}>
-              Subtotal: ${calculateTotal(newPo.items).toFixed(2)}
+              Subtotal: ₹{calculateTotal(newPo.items).toFixed(2)}
             </div>
           </div>
         )}
@@ -549,8 +549,8 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
                       <div style={{ color: 'var(--color-neutral-400)' }}>{item.sku}</div>
                     </td>
                     <td>{item.qty} units</td>
-                    <td>${item.unitCost.toFixed(2)}</td>
-                    <td style={{ fontWeight: 700 }}>${(item.qty * item.unitCost).toFixed(2)}</td>
+                    <td>₹{item.unitCost.toFixed(2)}</td>
+                    <td style={{ fontWeight: 700 }}>₹{(item.qty * item.unitCost).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -559,7 +559,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
             <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-primary-50)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, color: 'var(--color-primary-800)' }}>Net Purchase Authorization Total</span>
               <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--color-primary-700)' }}>
-                ${calculateTotal(newPo.items).toFixed(2)}
+                ₹{calculateTotal(newPo.items).toFixed(2)}
               </span>
             </div>
           </div>
@@ -675,15 +675,15 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
                   <tr key={i}>
                     <td>{item.name || item.product}</td>
                     <td>{item.qty}</td>
-                    <td>${item.unitCost}</td>
-                    <td style={{ fontWeight: 600 }}>${item.total || (item.qty * item.unitCost)}</td>
+                    <td>₹{item.unitCost}</td>
+                    <td style={{ fontWeight: 600 }}>₹{item.total || (item.qty * item.unitCost)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
             <div style={{ textAlign: 'right', fontWeight: 800, fontSize: 'var(--font-size-lg)', color: 'var(--color-neutral-900)' }}>
-              Total: ${selectedOrder.totalAmount.toLocaleString()}
+              Total: ₹{selectedOrder.totalAmount.toLocaleString()}
             </div>
           </div>
         </Modal>

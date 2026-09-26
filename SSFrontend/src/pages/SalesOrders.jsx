@@ -10,7 +10,7 @@ import {
   ArrowRight,
   User,
   MapPin,
-  DollarSign,
+  IndianRupee,
   AlertCircle
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
@@ -114,7 +114,7 @@ export default function SalesOrders({ onNotify }) {
       accessor: 'total',
       render: (row) => (
         <span style={{ fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-          ${parseFloat(row.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ₹{parseFloat(row.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       )
     },
@@ -369,7 +369,7 @@ export default function SalesOrders({ onNotify }) {
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Order Total ($)</label>
+              <label className="form-label">Order Total (₹)</label>
               <input
                 type="number"
                 step="0.01"
