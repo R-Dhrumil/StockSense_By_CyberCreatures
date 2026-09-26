@@ -261,6 +261,7 @@ export default function Settings({ onNotify }) {
               onChange={(e) => setFinancials({ ...financials, currency: e.target.value })}
             >
               <option value="USD ($)">USD — United States Dollar ($)</option>
+              <option value="INR (₹)">INR — Indian Rupee (₹)</option>
               <option value="EUR (€)">EUR — Eurozone (€)</option>
               <option value="GBP (£)">GBP — British Pound (£)</option>
               <option value="CAD ($)">CAD — Canadian Dollar ($)</option>
