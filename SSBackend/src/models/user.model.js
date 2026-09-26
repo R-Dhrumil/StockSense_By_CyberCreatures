@@ -95,6 +95,20 @@ export class User {
   }
 
   /**
+   * Update a user's password by email
+   */
+  static async updatePassword(email, hashedPassword) {
+    const text = `
+      UPDATE users
+      SET password = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE email = $2
+      RETURNING id, name, email, role, department, is_active AS "isActive", updated_at AS "updatedAt"
+    `;
+    const res = await query(text, [hashedPassword, email.toLowerCase().trim()]);
+    return res.rows[0] || null;
+  }
+
+  /**
    * Delete all users (Used by Seeder)
    */
   static async deleteMany() {

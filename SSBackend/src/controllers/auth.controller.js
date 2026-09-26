@@ -195,6 +195,41 @@ export const getMe = catchAsync(async (req, res) => {
 });
 
 /**
+ * Reset Password using OTP
+ */
+export const resetPassword = catchAsync(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    throw new ApiError(400, 'Email, OTP, and new password are required');
+  }
+
+  if (newPassword.length < 6) {
+    throw new ApiError(400, 'Password must be at least 6 characters long');
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+  const otpRecord = await Otp.findValid({ email: cleanEmail, otp });
+
+  if (!otpRecord) {
+    throw new ApiError(400, 'Invalid or expired OTP verification code');
+  }
+
+  const user = await User.findByEmail(cleanEmail);
+  if (!user) {
+    throw new ApiError(404, 'No account found with this email address');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await User.updatePassword(cleanEmail, hashedPassword);
+
+  // Invalidate the OTP after use
+  await Otp.deleteByEmail(cleanEmail);
+
+  return ApiResponse.send(res, 200, null, 'Password reset successful. Please sign in with your new password.');
+});
+
+/**
  * Logout User (Clear Auth Cookie)
  */
 export const logout = catchAsync(async (req, res) => {
@@ -205,3 +240,4 @@ export const logout = catchAsync(async (req, res) => {
   });
   return ApiResponse.send(res, 200, null, 'Logged out successfully');
 });
+

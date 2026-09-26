@@ -22,17 +22,23 @@ import UsersManagement from './pages/UsersManagement';
 import Settings from './pages/Settings';
 
 import { INITIAL_PRODUCTS, DEFAULT_NOTIFICATIONS } from './data/mockData';
+import { api, authApi } from './services/api';
 import './App.css';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState({
-    id: 'USR-01',
-    name: 'Alexandria Vance',
-    email: 'a.vance@stocksense.io',
-    role: 'Admin',
-    avatar: 'AV'
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const storedUser = api.getCurrentUser();
+  const storedToken = api.getToken();
+
+  const [currentUser, setCurrentUser] = useState(
+    storedUser || {
+      id: 'USR-01',
+      name: 'Sarah Jenkins',
+      email: 's.jenkins@stocksense.io',
+      role: 'INVENTORY_MANAGER',
+      avatar: 'SJ'
+    }
+  );
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(storedToken || storedUser));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeWarehouse, setActiveWarehouse] = useState('All');
@@ -63,9 +69,15 @@ export default function App() {
     addToast('Welcome to StockSense', `Signed in as ${user.name} (${user.role}).`, 'success');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      api.clearAuth();
+    }
     setIsAuthenticated(false);
     navigate('/login');
+    addToast('Signed Out', 'You have been safely signed out.', 'info');
   };
 
   const handleRoleChange = (newRole) => {
