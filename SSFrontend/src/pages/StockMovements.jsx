@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeftRight,
   Download,
@@ -13,7 +13,8 @@ import {
   RefreshCw,
   Package,
   Layers,
-  FileText
+  FileText,
+  Warehouse
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   MapPin,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Warehouse
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
