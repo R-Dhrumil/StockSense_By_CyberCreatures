@@ -13,35 +13,38 @@ const seedDatabase = async () => {
     logger.info('Clearing existing users and records...');
     await User.deleteMany();
 
-    logger.info('Seeding core predictable hackathon accounts...');
+    logger.info('Seeding core predictable StockSense accounts...');
 
-    const adminPassword = await bcrypt.hash('adminpassword123', 10);
-    const defaultUserPassword = await bcrypt.hash('userpassword123', 10);
+    const adminPassword = await bcrypt.hash('Admin@1234', 10);
+    const managerPassword = await bcrypt.hash('Manager@1234', 10);
+    const staffPassword = await bcrypt.hash('Staff@1234', 10);
 
     // 1. Primary Admin Account
     await User.create({
-      name: 'Super Admin',
-      email: 'admin@hackathon.com',
+      name: 'Alexandria Vance',
+      email: 'admin@stocksense.io',
       password: adminPassword,
-      role: ROLES.ADMIN || 'ADMIN',
-      department: 'Executive',
+      role: 'ADMIN',
+      department: 'Executive Operations',
     });
 
-    // 2. Core StockSense Role Accounts (INVENTORY_MANAGER, STAFF)
-    const seededRoles = [ROLES.ADMIN];
-    for (const [key, roleName] of Object.entries(ROLES)) {
-      if (roleName !== ROLES.ADMIN) {
-        const emailSlug = roleName.toLowerCase().replace(/[^a-z0-9]/g, '');
-        await User.create({
-          name: `${roleName.replace(/_/g, ' ')} Specialist`,
-          email: `${emailSlug}@hackathon.com`,
-          password: defaultUserPassword,
-          role: roleName,
-          department: roleName === ROLES.STAFF ? 'Warehouse' : 'Operations',
-        });
-        seededRoles.push(roleName);
-      }
-    }
+    // 2. Inventory Manager Account
+    await User.create({
+      name: 'Sarah Jenkins',
+      email: 'sarah.jenkins@stocksense.io',
+      password: managerPassword,
+      role: 'INVENTORY_MANAGER',
+      department: 'Inventory Control',
+    });
+
+    // 3. Warehouse Staff Account
+    await User.create({
+      name: 'Marcus Vance',
+      email: 'marcus.vance@stocksense.io',
+      password: staffPassword,
+      role: 'STAFF',
+      department: 'Warehouse Floor',
+    });
 
     // 3. Generate 12 Realistic Mock Users for Live Demos & Dashboards
     logger.info('Generating 12 realistic mock user records with @faker-js/faker...');
