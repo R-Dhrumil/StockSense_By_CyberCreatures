@@ -68,13 +68,17 @@ export default function App() {
   };
 
   const refreshProductsList = () => {
+    setIsProductsLoading(true);
     productApi.getProducts()
       .then(res => {
         if (res?.data?.products && res.data.products.length > 0) {
           setProducts(res.data.products);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setIsProductsLoading(false);
+      });
   };
 
   // Fetch live products and warehouses on startup
