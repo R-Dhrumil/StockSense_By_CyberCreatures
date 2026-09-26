@@ -193,6 +193,14 @@ export default function Login({ onLoginSuccess }) {
       {/* Brand Hero Showcase Side */}
       <div className="login-brand">
         <div className="login-brand-content">
+          <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'center' }}>
+            <img 
+              src={logoDarkSvg} 
+              alt="StockSense by CyberCreatures" 
+              style={{ height: '48px', width: 'auto', maxWidth: '280px', objectFit: 'contain' }} 
+            />
+          </div>
+
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.18)', padding: '6px 14px', borderRadius: 'var(--radius-full)', marginBottom: '24px', backdropFilter: 'blur(8px)' }}>
             <img src={faviconSvg} alt="StockSense" style={{ width: 18, height: 18 }} />
             <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Modular Inventory Management System</span>
