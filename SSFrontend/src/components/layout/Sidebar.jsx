@@ -14,9 +14,7 @@ import {
   Users,
   Settings,
   ChevronLeft,
-  ChevronRight,
-  Box,
-  AlertTriangle
+  ChevronRight
 } from 'lucide-react';
 
 const NAV_GROUPS = [
@@ -73,12 +71,16 @@ export default function Sidebar({
         {/* Sidebar Header */}
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <Box size={20} strokeWidth={2.4} />
+            <img 
+              src="/favicon.svg" 
+              alt="StockSense" 
+              style={{ width: 26, height: 26, objectFit: 'contain' }} 
+            />
           </div>
 
           <div className="sidebar-brand">
             <span className="sidebar-brand-name">StockSense</span>
-            <span className="sidebar-brand-sub">Enterprise B2B Cloud</span>
+            <span className="sidebar-brand-sub">by CyberCreatures</span>
           </div>
 
           <button

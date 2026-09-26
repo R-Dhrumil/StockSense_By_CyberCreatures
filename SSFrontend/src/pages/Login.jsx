@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Box, 
   ShieldCheck, 
   KeyRound, 
   Lock, 
@@ -9,7 +8,6 @@ import {
   CheckCircle2, 
   AlertCircle, 
   ArrowRight,
-  Sparkles,
   BarChart,
   Warehouse,
   Boxes
@@ -82,7 +80,7 @@ export default function Login({ onLoginSuccess }) {
       <div className="login-brand">
         <div className="login-brand-content">
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.18)', padding: '6px 14px', borderRadius: 'var(--radius-full)', marginBottom: '24px', backdropFilter: 'blur(8px)' }}>
-            <Sparkles size={16} />
+            <img src="/favicon.svg" alt="StockSense" style={{ width: 18, height: 18 }} />
             <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Next-Gen Cloud Inventory OS</span>
           </div>
 
@@ -117,22 +115,12 @@ export default function Login({ onLoginSuccess }) {
       <div className="login-form-side">
         <div className="login-form-container">
           <div className="login-form-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <div style={{
-                width: 44,
-                height: 44,
-                borderRadius: 'var(--radius-xl)',
-                background: 'linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700))',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white'
-              }}>
-                <Box size={24} strokeWidth={2.4} />
-              </div>
-              <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--color-neutral-900)' }}>
-                StockSense
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '18px' }}>
+              <img 
+                src="/logo.svg" 
+                alt="StockSense by CyberCreatures" 
+                style={{ height: '48px', width: 'auto', objectFit: 'contain' }} 
+              />
             </div>
 
             <h2>Sign in to your console</h2>
