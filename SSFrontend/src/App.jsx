@@ -21,7 +21,7 @@ import Reports from './pages/Reports';
 import UsersManagement from './pages/UsersManagement';
 import Settings from './pages/Settings';
 
-import { INITIAL_PRODUCTS, DEFAULT_NOTIFICATIONS } from './data/mockData';
+import { INITIAL_PRODUCTS, DEFAULT_NOTIFICATIONS, INITIAL_WAREHOUSES } from './data/mockData';
 import { api, authApi, productApi } from './services/api';
 import './App.css';
 
@@ -186,6 +186,7 @@ export default function App() {
           onOpenNotifications={() => setIsNotificationOpen(true)}
           unreadCount={unreadCount}
           onOpenQuickAction={handleQuickAction}
+          warehouseList={INITIAL_WAREHOUSES}
         />
 
         {/* Dynamic Route Content */}
@@ -224,6 +225,7 @@ export default function App() {
                   setProducts={setProducts}
                   onNotify={addToast}
                   activeWarehouse={activeWarehouse}
+                  onChangeWarehouse={setActiveWarehouse}
                   currentUser={currentUser}
                 />
               }

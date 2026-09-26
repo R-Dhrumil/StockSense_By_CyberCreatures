@@ -28,7 +28,8 @@ export default function Topbar({
   onLogout,
   onOpenNotifications,
   unreadCount = 2,
-  onOpenQuickAction
+  onOpenQuickAction,
+  warehouseList = []
 }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [quickActionOpen, setQuickActionOpen] = useState(false);
@@ -36,6 +37,8 @@ export default function Topbar({
   const userMenuRef = useRef(null);
   const quickActionRef = useRef(null);
   const navigate = useNavigate();
+
+  const userRole = normalizeRole(currentUser?.role);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -96,17 +99,18 @@ export default function Topbar({
           aria-label="Select Active Warehouse"
         >
           <option value="All">All Warehouses (Global)</option>
-          {warehouseList.length > 0 ? (
+          {warehouseList && warehouseList.length > 0 ? (
             warehouseList.map((w) => (
               <option key={w.id} value={w.name}>
-                {w.name} ({w.code})
+                {w.name} {w.code ? `(${w.code})` : ''}
               </option>
             ))
           ) : (
             <>
-              <option value="Main Central Hub">Main Central Hub (WH-MAIN)</option>
-              <option value="Production Facility East">Production Facility East (WH-PROD)</option>
-              <option value="Southern Logistics Depot">Southern Logistics Depot (WH-SOUTH)</option>
+              <option value="West Coast Hub">West Coast Hub (Oakland)</option>
+              <option value="Central Logistics Hub">Central Logistics (Dallas)</option>
+              <option value="East Coast Dist">East Coast Dist (Allentown)</option>
+              <option value="Southern Regional Depot">Southern Depot (Atlanta)</option>
             </>
           )}
         </select>
@@ -232,48 +236,6 @@ export default function Topbar({
                 <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-neutral-900)', margin: '2px 0 0' }}>
                   {currentUser?.email}
                 </p>
-              </div>
-
-              {/* Role Switcher Section for Demoing / Testing */}
-              <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--color-neutral-100)', background: 'var(--color-neutral-50)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                  <Shield size={13} style={{ color: 'var(--color-primary-600)' }} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-neutral-600)' }}>
-                    Switch Active Role
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {Object.entries(ROLE_LABELS).map(([roleKey, label]) => {
-                    const isSelected = userRole === roleKey;
-                    return (
-                      <button
-                        key={roleKey}
-                        type="button"
-                        onClick={() => {
-                          onChangeRole?.(roleKey);
-                          setUserMenuOpen(false);
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '6px 8px',
-                          borderRadius: 'var(--radius-sm)',
-                          border: isSelected ? '1px solid var(--color-primary-300)' : '1px solid transparent',
-                          background: isSelected ? 'var(--color-primary-50)' : 'transparent',
-                          color: isSelected ? 'var(--color-primary-700)' : 'var(--color-neutral-700)',
-                          fontSize: '12px',
-                          fontWeight: isSelected ? 600 : 400,
-                          cursor: 'pointer',
-                          textAlign: 'left'
-                        }}
-                      >
-                        <span>{label}</span>
-                        {isSelected && <Check size={14} style={{ color: 'var(--color-primary-600)' }} />}
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               {hasPermission.canManageSettings(userRole) && (

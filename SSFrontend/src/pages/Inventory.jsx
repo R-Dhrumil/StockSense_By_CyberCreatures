@@ -22,13 +22,20 @@ import Modal from '../components/common/Modal';
 import { INITIAL_WAREHOUSES } from '../data/mockData';
 import { hasPermission, normalizeRole, ROLES } from '../utils/permissions';
 
-export default function Inventory({ products, setProducts, onNotify, activeWarehouse, currentUser }) {
+export default function Inventory({ products, setProducts, onNotify, activeWarehouse, onChangeWarehouse, currentUser }) {
   const currentRole = normalizeRole(currentUser?.role);
   const isStaff = currentRole === ROLES.STAFF;
   const canValidateAdjustments = hasPermission.canValidateAdjustments(currentUser?.role);
   const [selectedWarehouse, setSelectedWarehouse] = useState(activeWarehouse || 'All');
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+  // Sync facility view whenever activeWarehouse changes in Topbar
+  useEffect(() => {
+    if (activeWarehouse) {
+      setSelectedWarehouse(activeWarehouse);
+    }
+  }, [activeWarehouse]);
 
   // Adjustment form state
   const [adjustData, setAdjustData] = useState({
@@ -421,7 +428,10 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
               <button
                 type="button"
                 className={`filter-btn ${selectedWarehouse === 'All' ? 'active' : ''}`}
-                onClick={() => setSelectedWarehouse('All')}
+                onClick={() => {
+                  setSelectedWarehouse('All');
+                  onChangeWarehouse?.('All');
+                }}
               >
                 All Facilities
               </button>
@@ -430,7 +440,10 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
                   key={wh.id}
                   type="button"
                   className={`filter-btn ${selectedWarehouse === wh.name ? 'active' : ''}`}
-                  onClick={() => setSelectedWarehouse(wh.name)}
+                  onClick={() => {
+                    setSelectedWarehouse(wh.name);
+                    onChangeWarehouse?.(wh.name);
+                  }}
                 >
                   {wh.name}
                 </button>
