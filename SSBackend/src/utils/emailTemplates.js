@@ -24,13 +24,13 @@ const baseWrapper = (content) => `
 <body>
   <div class="container">
     <div class="header">
-      <h1>🚀 Hackathon System</h1>
+      <h1>📦 StockSense</h1>
     </div>
     <div class="body">
       ${content}
     </div>
     <div class="footer">
-      <p>Automated Notification • Hackathon Backend API System</p>
+      <p>Automated Notification • StockSense IMS by Team CyberCreatures</p>
     </div>
   </div>
 </body>

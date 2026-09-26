@@ -23,8 +23,8 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_SECURE: z.string().optional().default('false'),
-  FROM_EMAIL: z.string().optional().default('noreply@hackathon.com'),
-  FROM_NAME: z.string().optional().default('Hackathon Backend'),
+  FROM_EMAIL: z.string().optional().default(''),
+  FROM_NAME: z.string().optional().default('Team CyberCreatures'),
 });
 
 const _env = envSchema.safeParse(process.env);

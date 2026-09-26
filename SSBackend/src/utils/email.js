@@ -39,8 +39,14 @@ if (emailUser && emailPass) {
  * @param {string} [options.text] - Plain text content fallback
  */
 export const sendEmail = async ({ to, subject, html, text }) => {
+  // For Gmail or if FROM_EMAIL is omitted, guarantee sender matches the authenticated emailUser
+  const resolvedFromEmail = (env.EMAIL_SERVICE === 'gmail' && emailUser)
+    ? emailUser
+    : (env.FROM_EMAIL || emailUser || 'noreply@hackathon.com');
+  const resolvedFromName = env.FROM_NAME || 'Team CyberCreatures';
+
   const mailOptions = {
-    from: `"${env.FROM_NAME}" <${env.FROM_EMAIL || emailUser || 'noreply@hackathon.com'}>`,
+    from: `"${resolvedFromName}" <${resolvedFromEmail}>`,
     to,
     subject,
     text: text || html?.replace(/<[^>]*>?/gm, '') || '',
