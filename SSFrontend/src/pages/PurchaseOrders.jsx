@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   MapPin,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Warehouse
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
@@ -39,68 +40,65 @@ export default function PurchaseOrders({
   onChangeWarehouse
 }) {
   const facilityList = (warehouses && warehouses.length > 0) ? warehouses : DEFAULT_WAREHOUSES;
-  const SUPPLIER_LIST = ['Apex Dynamics Corp', 'LuminoTech Precision', 'Vortex Flow Systems', 'ElectroCore Global', 'Titanium Mechanical Inc'];
-  export default function PurchaseOrders({ onNotify, products, setProducts, warehouses = [], currentUser }) {
-    const facilityList = (warehouses && warehouses.length > 0) ? warehouses : [];
-    const DEFAULT_SUPPLIERS = ['Apex Dynamics Corp', 'LuminoTech Precision', 'Vortex Flow Systems', 'ElectroCore Global', 'Titanium Mechanical Inc'];
-    const [supplierList, setSupplierList] = useState(DEFAULT_SUPPLIERS);
-    const canCreateReceipts = hasPermission.canCreateReceipts(currentUser?.role);
-    const canValidateReceipts = hasPermission.canValidateReceipts(currentUser?.role);
-    const location = useLocation();
+  const DEFAULT_SUPPLIERS = ['Apex Dynamics Corp', 'LuminoTech Precision', 'Vortex Flow Systems', 'ElectroCore Global', 'Titanium Mechanical Inc'];
+  const [supplierList, setSupplierList] = useState(DEFAULT_SUPPLIERS);
+  const canCreateReceipts = hasPermission.canCreateReceipts(currentUser?.role);
+  const canValidateReceipts = hasPermission.canValidateReceipts(currentUser?.role);
+  const location = useLocation();
 
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState(null);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [createStep, setCreateStep] = useState(1);
-    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
-    const [receivingOrder, setReceivingOrder] = useState(null);
-    const [receivingItems, setReceivingItems] = useState([]);
-    const [isValidating, setIsValidating] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createStep, setCreateStep] = useState(1);
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+  const [receivingOrder, setReceivingOrder] = useState(null);
+  const [receivingItems, setReceivingItems] = useState([]);
+  const [isValidating, setIsValidating] = useState(false);
 
-    // Sub-locations per warehouse for dynamic rack selection
-    const [warehouseLocations, setWarehouseLocations] = useState([]);
-    const [loadingLocations, setLoadingLocations] = useState(false);
+  // Sub-locations per warehouse for dynamic rack selection
+  const [warehouseLocations, setWarehouseLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
-    // Stock Ledger Drawer State
-    const [isLedgerDrawerOpen, setIsLedgerDrawerOpen] = useState(false);
-    const [ledgerLogs, setLedgerLogs] = useState([]);
-    const [loadingLedger, setLoadingLedger] = useState(false);
+  // Stock Ledger Drawer State
+  const [isLedgerDrawerOpen, setIsLedgerDrawerOpen] = useState(false);
+  const [ledgerLogs, setLedgerLogs] = useState([]);
+  const [loadingLedger, setLoadingLedger] = useState(false);
 
-    // Filter orders by active warehouse
-    const displayedOrders = useMemo(() => {
-      if (!activeWarehouse || activeWarehouse === 'All') return orders;
-      return orders.filter(o => matchesWarehouse(o.warehouse || o.warehouseName, activeWarehouse, facilityList));
-    }, [orders, activeWarehouse, facilityList]);
+  // Filter orders by active warehouse
+  const displayedOrders = useMemo(() => {
+    if (!activeWarehouse || activeWarehouse === 'All') return orders;
+    return orders.filter(o => matchesWarehouse(o.warehouse || o.warehouseName, activeWarehouse, facilityList));
+  }, [orders, activeWarehouse, facilityList]);
 
-    // Fetch dynamic suppliers list
-    useEffect(() => {
-      const fetchSuppliers = async () => {
-        try {
-          const res = await fetch('/api/v1/suppliers');
-          if (res.ok) {
-            const data = await res.json();
-            if (data.data?.suppliers && data.data.suppliers.length > 0) {
-              setSupplierList(data.data.suppliers.map(s => s.name));
-            }
+  // Fetch dynamic suppliers list
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const res = await fetch('/api/v1/suppliers');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data?.suppliers && data.data.suppliers.length > 0) {
+            setSupplierList(data.data.suppliers.map(s => s.name));
           }
-        } catch (e) { }
-      };
-      fetchSuppliers();
-    }, []);
+        }
+      } catch (e) {}
+    };
+    fetchSuppliers();
+  }, []);
 
-    // New PO / Receipt Form State
-    const [newPo, setNewPo] = useState({
-      supplier: DEFAULT_SUPPLIERS[0],
-      warehouseId: facilityList[0]?.id || '',
-      warehouseName: (activeWarehouse && activeWarehouse !== 'All') ? activeWarehouse : (facilityList[0]?.name || 'Main Central Hub'),
-      locationId: '',
-      expectedDelivery: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
-      notes: '',
-      items: [
-        { productId: products[0]?.id || '', product: products[0]?.name || 'Industrial Torque Sensor TS-90', sku: products[0]?.sku || 'SEN-TRQ-90', qty: 25, unitCost: products[0]?.costPrice || products[0]?.price || 210.00 }
-      ]
-    });
+  // New PO / Receipt Form State
+  const [newPo, setNewPo] = useState({
+    supplier: DEFAULT_SUPPLIERS[0],
+    warehouseId: facilityList[0]?.id || '',
+    warehouseName: (activeWarehouse && activeWarehouse !== 'All') ? activeWarehouse : (facilityList[0]?.name || 'Main Central Hub'),
+    locationId: '',
+    expectedDelivery: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+    notes: '',
+    items: [
+      { productId: products[0]?.id || '', product: products[0]?.name || 'Industrial Torque Sensor TS-90', sku: products[0]?.sku || 'SEN-TRQ-90', qty: 25, unitCost: products[0]?.costPrice || products[0]?.price || 210.00 }
+    ]
+  });
 
     // Calculate Order Totals
     const calculateTotal = (items) => {
