@@ -76,18 +76,18 @@ export default function SalesOrders({ onNotify, currentUser }) {
       if (res?.data?.deliveries && res.data.deliveries.length > 0) {
         // Map backend format to uniform frontend display format
         const formatted = res.data.deliveries.map((d) => ({
-          id: d.operation_number || d.id,
+          id: d.operation_number || d.operationNumber || d.id,
           rawId: d.id,
-          customer: d.partner_name || 'Direct Customer',
-          destination: d.shipping_address || 'Central Fulfillment',
+          customer: d.partner_name || d.partnerName || 'Direct Customer',
+          destination: d.shipping_address || d.sourceLocationName || d.warehouseName || 'Central Fulfillment',
           contact: d.created_by_name || 'Sales Department',
-          date: d.created_at ? new Date(d.created_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
-          total: parseFloat(d.total_amount || 0),
+          date: d.created_at || d.createdAt ? new Date(d.created_at || d.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+          total: parseFloat(d.total_amount || d.totalCost || 0),
           fulfillmentStatus: d.status || 'WAITING',
           shippingCarrier: d.shipping_carrier || 'FedEx Priority',
           trackingNumber: d.tracking_number || 'Pending Assignment',
-          lines: d.lines || [],
-          notes: d.notes,
+          lines: d.lines || d.items || [],
+          notes: d.notes || d.reference_note || d.referenceNote,
         }));
         setOrders(formatted);
       } else {

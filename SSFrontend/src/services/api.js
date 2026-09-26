@@ -261,8 +261,30 @@ export const userApi = {
   },
 };
 
-// Operations & Delivery Orders Service Endpoints
+// Operations (Receipts & Deliveries) Service Endpoints
 export const operationApi = {
+  // Operation 1: Receipts (Incoming Goods)
+  getReceipts: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/receipts?${queryStr}` : '/operations/receipts';
+    return await api.get(endpoint);
+  },
+
+  getReceiptById: async (id) => {
+    return await api.get(`/operations/receipts/${id}`);
+  },
+
+  createReceipt: async (receiptData) => {
+    return await api.post('/operations/receipts', receiptData);
+  },
+
+  validateReceipt: async (id, data = {}) => {
+    return await api.post(`/operations/receipts/${id}/validate`, data);
+  },
+
+  // Operation 2: Deliveries (Outgoing Customer Shipments)
   getDeliveries: async (params = {}) => {
     const queryStr = new URLSearchParams(
       Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
@@ -294,8 +316,56 @@ export const operationApi = {
   cancelDelivery: async (id) => {
     return await api.post(`/operations/deliveries/${id}/cancel`, {});
   },
+
+  // Operation 3: Internal Transfers (Inter-Rack / Inter-Hub)
+  getTransfers: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/transfers?${queryStr}` : '/operations/transfers';
+    return await api.get(endpoint);
+  },
+
+  getTransferById: async (id) => {
+    return await api.get(`/operations/transfers/${id}`);
+  },
+
+  createTransfer: async (transferData) => {
+    return await api.post('/operations/transfers', transferData);
+  },
+
+  validateTransfer: async (id) => {
+    return await api.post(`/operations/transfers/${id}/validate`, {});
+  },
+
+  cancelTransfer: async (id) => {
+    return await api.post(`/operations/transfers/${id}/cancel`, {});
+  },
+
+  // Operation 4: Stock Adjustments (Physical Cycle Counts & Discrepancies)
+  getAdjustments: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/adjustments?${queryStr}` : '/operations/adjustments';
+    return await api.get(endpoint);
+  },
+
+  createAdjustment: async (adjustmentData) => {
+    return await api.post('/operations/adjustments', adjustmentData);
+  },
+
+  // Audit Ledger
+  getStockLedger: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/ledger?${queryStr}` : '/operations/ledger';
+    return await api.get(endpoint);
+  },
 };
 
 export default api;
+
 
 
