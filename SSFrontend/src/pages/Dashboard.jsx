@@ -186,60 +186,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
         />
       </div>
 
-      {/* Quick Actions Shortcuts */}
-      <div className="card mb-6" style={{ padding: 'var(--space-4)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-neutral-700)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <Zap size={15} style={{ color: 'var(--color-warning-500)' }} /> Operational Quick Shortcuts
-          </span>
-          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)' }}>
-            Frequently used tasks
-          </span>
-        </div>
-        <div className="quick-actions">
-          <div className="quick-action" onClick={() => onOpenQuickAction('product')}>
-            <div className="quick-action-icon">
-              <Plus size={18} style={{ color: 'var(--color-primary-600)' }} />
-            </div>
-            <span>New Product</span>
-          </div>
-
-          <div className="quick-action" onClick={() => onOpenQuickAction('adjustment')}>
-            <div className="quick-action-icon">
-              <RefreshCw size={18} style={{ color: 'var(--color-warning-600)' }} />
-            </div>
-            <span>Adjust Stock</span>
-          </div>
-
-          <div className="quick-action" onClick={() => onOpenQuickAction('po')}>
-            <div className="quick-action-icon">
-              <ShoppingCart size={18} style={{ color: 'var(--color-info-600)' }} />
-            </div>
-            <span>Create PO</span>
-          </div>
-
-          <div className="quick-action" onClick={() => navigate('/inventory')}>
-            <div className="quick-action-icon">
-              <Truck size={18} style={{ color: 'var(--color-success-600)' }} />
-            </div>
-            <span>Stock Transfer</span>
-          </div>
-
-          <div className="quick-action" onClick={() => onOpenQuickAction('so')}>
-            <div className="quick-action-icon">
-              <Send size={18} style={{ color: '#8C4116' }} />
-            </div>
-            <span>New Sales Order</span>
-          </div>
-
-          <div className="quick-action" onClick={() => navigate('/reports')}>
-            <div className="quick-action-icon">
-              <Boxes size={18} style={{ color: '#4B5563' }} />
-            </div>
-            <span>Stock Valuation</span>
-          </div>
-        </div>
-      </div>
+      
 
       {/* Main Charts Grid */}
       <div className="charts-grid">

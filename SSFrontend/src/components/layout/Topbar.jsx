@@ -37,8 +37,6 @@ export default function Topbar({
   const quickActionRef = useRef(null);
   const navigate = useNavigate();
 
-  const userRole = normalizeRole(currentUser?.role);
-
   // Close menus when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -98,10 +96,19 @@ export default function Topbar({
           aria-label="Select Active Warehouse"
         >
           <option value="All">All Warehouses (Global)</option>
-          <option value="West Coast Hub">West Coast Hub (Oakland)</option>
-          <option value="Central Logistics Hub">Central Logistics (Dallas)</option>
-          <option value="East Coast Dist">East Coast Dist (Allentown)</option>
-          <option value="Southern Regional Depot">Southern Depot (Atlanta)</option>
+          {warehouseList.length > 0 ? (
+            warehouseList.map((w) => (
+              <option key={w.id} value={w.name}>
+                {w.name} ({w.code})
+              </option>
+            ))
+          ) : (
+            <>
+              <option value="Main Central Hub">Main Central Hub (WH-MAIN)</option>
+              <option value="Production Facility East">Production Facility East (WH-PROD)</option>
+              <option value="Southern Logistics Depot">Southern Logistics Depot (WH-SOUTH)</option>
+            </>
+          )}
         </select>
       </div>
 

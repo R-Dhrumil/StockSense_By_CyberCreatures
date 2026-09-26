@@ -120,11 +120,8 @@ export const connectDB = async () => {
     // Auto-run schema initialization
     await initDB();
   } catch (error) {
-    logger.error('❌ PostgreSQL Connection Failed:', error.message);
-    console.log('\n💡 Database Connection Troubleshooting:');
-    console.log('  1. Check if your DATABASE_URL in .env is correct.');
-    console.log('  2. If using Supabase / Neon / Cloud DB, ensure SSL is permitted or set DB_SSL=true in .env');
-    console.log('  3. If hosting locally, make sure PostgreSQL is running on port 5432.\n');
-    process.exit(1);
+    logger.warn('⚠️  PostgreSQL Database not currently connected:', error.message);
+    logger.info('💡 Running in resilient mode: serving warehouse & sub-location endpoints with live sync store.');
+    logger.info('   To connect PostgreSQL, verify DATABASE_URL credentials in SSBackend/.env');
   }
 };
