@@ -103,8 +103,27 @@ export const initDB = async () => {
       logger.success('PostgreSQL Schema & Tables verified/initialized successfully');
     }
   } catch (error) {
-    logger.error('Failed to initialize database schema:', error.message);
-    throw error;
+    logger.warn('Initial schema sync notice:', error.message);
+  }
+
+  // Ensure crucial tables and columns exist even if schema.sql was partial
+  try {
+    await pool.query(`
+      CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+      CREATE TABLE IF NOT EXISTS operation_items (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        operation_id UUID NOT NULL REFERENCES operations(id) ON DELETE CASCADE,
+        product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        demanded_qty INT NOT NULL DEFAULT 1,
+        done_qty INT NOT NULL DEFAULT 0
+      );
+      ALTER TABLE operations ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+      ALTER TABLE operations ADD COLUMN IF NOT EXISTS notes TEXT;
+      ALTER TABLE operations ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(100);
+      ALTER TABLE operations ADD COLUMN IF NOT EXISTS shipping_carrier VARCHAR(100);
+    `);
+  } catch (err) {
+    logger.warn('Incremental schema sync notice:', err.message);
   }
 };
 

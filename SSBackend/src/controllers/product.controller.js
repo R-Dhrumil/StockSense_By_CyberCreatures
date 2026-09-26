@@ -3,6 +3,7 @@ import { Category } from '../models/category.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import { checkProductStockAndAlert } from '../services/alert.service.js';
 
 /**
  * Get catalog products with search & filters
@@ -105,6 +106,10 @@ export const createProduct = catchAsync(async (req, res) => {
     image: image || 'Package'
   });
 
+  if (product?.id && (product.availableQty <= (product.reorderLevel || 10))) {
+    checkProductStockAndAlert(product.id, product.warehouse);
+  }
+
   return ApiResponse.send(res, 201, { product }, 'Product created successfully');
 });
 
@@ -128,6 +133,11 @@ export const updateProduct = catchAsync(async (req, res) => {
   }
 
   const updated = await Product.update(id, req.body);
+  
+  if (updated?.id && (updated.availableQty <= (updated.reorderLevel || 10))) {
+    checkProductStockAndAlert(updated.id, updated.warehouse);
+  }
+
   return ApiResponse.send(res, 200, { product: updated }, 'Product updated successfully');
 });
 
@@ -143,4 +153,89 @@ export const deleteProduct = catchAsync(async (req, res) => {
   }
 
   return ApiResponse.send(res, 200, { id }, `Product '${deleted.name}' deleted successfully`);
+});
+
+/**
+ * Bulk import products from CSV/JSON payload
+ */
+export const bulkImportProducts = catchAsync(async (req, res) => {
+  const { products = [] } = req.body;
+
+  if (!Array.isArray(products) || products.length === 0) {
+    throw new ApiError(400, 'Products array is required and must not be empty');
+  }
+
+  const results = {
+    created: 0,
+    updated: 0,
+    errors: [],
+    products: []
+  };
+
+  for (const item of products) {
+    try {
+      const name = item.name || item.product_name || item.productName || item['Product Name'] || item['Name'];
+      if (!name || !String(name).trim()) continue;
+
+      let sku = item.sku || item.SKU || item.item_code || item['SKU'] || item['Item Code'];
+      if (!sku || !String(sku).trim()) {
+        sku = `SKU-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+      sku = String(sku).trim().toUpperCase();
+
+      const price = parseFloat(item.price || item.sellingPrice || item['Selling Price'] || item['Price'] || 0) || 0;
+      const cost_price = parseFloat(item.cost_price || item.costPrice || item['Cost Price'] || item['Cost'] || 0) || 0;
+      const available_qty = parseInt(item.available_qty || item.availableQty || item.quantity || item.qty || item['Available Stock'] || item['Quantity'] || item['Stock'] || 0, 10) || 0;
+      const reorder_level = parseInt(item.reorder_level || item.reorderLevel || item['Reorder Level'] || item['Min Stock'] || 10, 10) || 10;
+      const uom = item.uom || item.unit || item['Unit'] || item['UOM'] || 'pcs';
+      const category_name = item.category_name || item.category || item['Category'] || item['Category Name'] || 'General';
+      const warehouse = item.warehouse || item['Warehouse'] || 'Main Store';
+      const barcode = item.barcode || item['Barcode'] || null;
+      const description = item.description || item['Description'] || '';
+
+      const existing = await Product.findBySku(sku);
+      if (existing) {
+        const updated = await Product.update(existing.id, {
+          name: String(name).trim(),
+          category_name,
+          price,
+          cost_price,
+          available_qty,
+          reorder_level,
+          uom,
+          warehouse,
+          barcode,
+          description
+        });
+        results.updated++;
+        results.products.push(updated);
+      } else {
+        const created = await Product.create({
+          name: String(name).trim(),
+          sku,
+          barcode,
+          category_name,
+          price,
+          cost_price,
+          available_qty,
+          reorder_level,
+          uom,
+          warehouse,
+          description,
+          image: 'Package'
+        });
+        results.created++;
+        results.products.push(created);
+      }
+    } catch (err) {
+      results.errors.push({ sku: item.sku || item.name, error: err.message });
+    }
+  }
+
+  return ApiResponse.send(
+    res,
+    200,
+    results,
+    `Processed ${results.created + results.updated} products (${results.created} created, ${results.updated} updated)`
+  );
 });

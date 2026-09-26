@@ -6,6 +6,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { broadcastEvent } from '../services/socket.service.js';
+import { triggerLowStockNotification, checkProductStockAndAlert } from '../services/alert.service.js';
 
 
 /**
@@ -358,22 +359,14 @@ export const validateDelivery = catchAsync(async (req, res) => {
       timestamp: new Date()
     });
 
-    // Check for low stock items and trigger alert:low_stock
+    // Check for low stock items and trigger alert:low_stock + email to Admin/Manager
     if (validated.items && validated.items.length > 0) {
       for (const it of validated.items) {
-        if (it.newAvailableQty !== undefined && it.newAvailableQty <= 10) {
-          broadcastEvent('alert:low_stock', {
-            productId: it.productId,
-            productName: it.productName || 'Stock Product',
-            currentStock: it.newAvailableQty,
-            reorderLevel: 10,
-            severity: it.newAvailableQty === 0 ? 'CRITICAL' : 'WARNING',
-            message: it.newAvailableQty === 0 
-              ? `CRITICAL ALERT: Product is completely OUT OF STOCK after delivery!` 
-              : `LOW STOCK ALERT: Inventory dropped to ${it.newAvailableQty} units after delivery ${validated.operationNumber}.`,
-            timestamp: new Date()
-          });
-        }
+        checkProductStockAndAlert(
+          it.productId || it.product_id,
+          validated.warehouseName || validated.warehouse,
+          validated.locationName || validated.sourceLocationName
+        );
       }
     }
   } catch (e) {}
@@ -542,6 +535,17 @@ export const validateTransfer = catchAsync(async (req, res) => {
       transfer: validated,
       timestamp: new Date()
     });
+
+    // Check if source location product stock dropped below reorder level
+    if (validated.items && validated.items.length > 0) {
+      for (const it of validated.items) {
+        checkProductStockAndAlert(
+          it.productId || it.product_id,
+          validated.warehouseName || validated.warehouse,
+          validated.sourceLocationName || validated.source_location_name
+        );
+      }
+    }
   } catch (e) {}
 
   return ApiResponse.send(
@@ -674,18 +678,12 @@ export const createAdjustment = catchAsync(async (req, res) => {
       timestamp: new Date()
     });
 
-    const newStock = adjustment.newAvailableQty ?? adjustment.countedQty;
-    if (newStock !== undefined && newStock <= 10) {
-      broadcastEvent('alert:low_stock', {
-        productId: targetProduct,
-        currentStock: newStock,
-        reorderLevel: 10,
-        severity: newStock === 0 ? 'CRITICAL' : 'WARNING',
-        message: newStock === 0 
-          ? `CRITICAL ALERT: Product is completely OUT OF STOCK after physical adjustment ${adjustment.operationNumber || adjustment.id}!` 
-          : `LOW STOCK ALERT: Product stock adjusted down to ${newStock} units (${adjustment.reason}).`,
-        timestamp: new Date()
-      });
+    if (targetProduct) {
+      checkProductStockAndAlert(
+        targetProduct,
+        adjustment.warehouseName || adjustment.warehouse,
+        adjustment.locationName || adjustment.location_name
+      );
     }
   } catch (e) {}
 

@@ -23,12 +23,31 @@ import { normalizeRole } from '../utils/permissions';
 import { ledgerApi } from '../services/api';
 import { downloadPdfReport, downloadExcelReport } from '../utils/exportUtils';
 
-export default function StockMovements({ onNotify, currentUser }) {
+import { matchesWarehouse, DEFAULT_WAREHOUSES } from '../utils/warehouseUtils';
+
+export default function StockMovements({
+  onNotify,
+  currentUser,
+  activeWarehouse = 'All',
+  onChangeWarehouse,
+  warehouses = []
+}) {
   const currentRole = normalizeRole(currentUser?.role);
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMovement, setSelectedMovement] = useState(null);
   const [typeFilter, setTypeFilter] = useState('ALL');
+
+  const facilityList = warehouses && warehouses.length > 0 ? warehouses : DEFAULT_WAREHOUSES;
+
+  // Filter movements by active warehouse
+  const displayedMovements = useMemo(() => {
+    if (!activeWarehouse || activeWarehouse === 'All') return movements;
+    return movements.filter(m => 
+      matchesWarehouse(m.source, activeWarehouse, facilityList) || 
+      matchesWarehouse(m.destination, activeWarehouse, facilityList)
+    );
+  }, [movements, activeWarehouse, facilityList]);
 
   // Load live ledger records from Backend
   const loadLedger = useCallback(async () => {
@@ -83,9 +102,9 @@ export default function StockMovements({ onNotify, currentUser }) {
     ];
     await downloadPdfReport({
       title: 'StockSense Central Stock Ledger Audit Trail',
-      subtitle: `Total Move Records: ${movements.length} | Generated: ${new Date().toLocaleDateString()}`,
+      subtitle: `Total Move Records: ${displayedMovements.length}${activeWarehouse !== 'All' ? ` | Facility: ${activeWarehouse}` : ''} | Generated: ${new Date().toLocaleDateString()}`,
       columns: exportCols,
-      data: movements,
+      data: displayedMovements,
       filename: `StockSense_Stock_Ledger_${dateStr}.pdf`
     });
     onNotify?.('PDF Downloaded', 'Stock ledger audit trail exported to PDF.', 'success');
@@ -110,7 +129,7 @@ export default function StockMovements({ onNotify, currentUser }) {
       title: 'StockSense Central Stock Ledger Audit Trail',
       sheetName: 'Stock Movements',
       columns: exportCols,
-      data: movements,
+      data: displayedMovements,
       filename: `StockSense_Stock_Ledger_${dateStr}.xlsx`
     });
     onNotify?.('Excel Downloaded', 'Stock ledger audit trail exported to Excel (.xlsx).', 'success');
@@ -251,10 +270,41 @@ export default function StockMovements({ onNotify, currentUser }) {
         </div>
       </div>
 
+      {/* Active Warehouse Banner */}
+      {activeWarehouse && activeWarehouse !== 'All' && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'rgba(232, 137, 78, 0.08)',
+          border: '1px solid rgba(232, 137, 78, 0.25)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--color-primary-700)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Warehouse size={16} style={{ color: 'var(--color-primary-600)' }} />
+            <span>
+              Showing movements where origin or destination is <strong>{activeWarehouse}</strong>
+            </span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => onChangeWarehouse?.('All')}
+            style={{ fontSize: '11px', padding: '4px 10px', height: 'auto' }}
+          >
+            Show All Facilities
+          </button>
+        </div>
+      )}
+
       {/* Main Table */}
       <DataTable
         columns={columns}
-        data={movements}
+        data={displayedMovements}
         searchPlaceholder="Filter by SKU, product name, PO/SO/TRF/ADJ reference, or auditor..."
         filterOptions={filterOptions}
         filterKey="type"

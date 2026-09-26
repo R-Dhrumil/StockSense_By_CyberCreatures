@@ -28,23 +28,35 @@ import { useNavigate } from 'react-router-dom';
 import { warehouseApi } from '../services/api';
 import { downloadPdfReport, downloadExcelReport } from '../utils/exportUtils';
 
-export default function Reports({ onNotify, currentUser }) {
+import { DEFAULT_WAREHOUSES } from '../utils/warehouseUtils';
+
+export default function Reports({ onNotify, currentUser, activeWarehouse = 'All', onChangeWarehouse }) {
   const navigate = useNavigate();
   const canViewReports = hasPermission.canViewReports(currentUser?.role);
   const [activeReportTab, setActiveReportTab] = useState('valuation');
-  const [selectedHub, setSelectedHub] = useState('All');
+  const [selectedHub, setSelectedHub] = useState(activeWarehouse || 'All');
   const [dateFilter, setDateFilter] = useState('Quarter to Date');
-  const [warehouses, setWarehouses] = useState([]);
+  const [warehouses, setWarehouses] = useState(DEFAULT_WAREHOUSES);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    warehouseApi.getAll()
-      .then(res => {
-        if (res?.data && Array.isArray(res.data)) {
-          setWarehouses(res.data);
-        }
-      })
-      .catch(() => {});
+    if (activeWarehouse) {
+      setSelectedHub(activeWarehouse);
+    }
+  }, [activeWarehouse]);
+
+  useEffect(() => {
+    const fetchWarehouses = warehouseApi?.getWarehouses || warehouseApi?.getAll;
+    if (typeof fetchWarehouses === 'function') {
+      fetchWarehouses()
+        .then(res => {
+          const list = res?.data?.warehouses || res?.data;
+          if (Array.isArray(list)) {
+            setWarehouses(list);
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   // Valuation Trend Dataset
@@ -457,7 +469,10 @@ export default function Reports({ onNotify, currentUser }) {
                 className="form-select"
                 style={{ height: '36px', fontSize: '12px' }}
                 value={selectedHub}
-                onChange={(e) => setSelectedHub(e.target.value)}
+                onChange={(e) => {
+                  setSelectedHub(e.target.value);
+                  onChangeWarehouse?.(e.target.value);
+                }}
               >
                 <option value="All">All Facilities (Consolidated)</option>
                 {warehouses.map(w => (
@@ -568,7 +583,16 @@ export default function Reports({ onNotify, currentUser }) {
                   <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
                   <Tooltip
                     formatter={(val) => [`₹${val}k`, 'Net Valuation']}
-                    contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
+                    contentStyle={{
+                      backgroundColor: '#111827',
+                      color: '#FFFFFF',
+                      borderRadius: '8px',
+                      border: '1px solid #374151',
+                      padding: '8px 12px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)'
+                    }}
+                    itemStyle={{ color: '#FFFFFF', fontWeight: 600, fontSize: '13px' }}
+                    labelStyle={{ color: '#F3F4F6', fontWeight: 600, fontSize: '12px', marginBottom: '2px' }}
                   />
                   <Area type="monotone" dataKey="inventoryValue" stroke="#E8894E" strokeWidth={3} fill="url(#repVal)" />
                 </AreaChart>
@@ -668,7 +692,16 @@ export default function Reports({ onNotify, currentUser }) {
                 <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
                 <Tooltip
                   formatter={(val) => [`₹${val.toLocaleString()}`, '']}
-                  contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
+                  contentStyle={{
+                    backgroundColor: '#111827',
+                    color: '#FFFFFF',
+                    borderRadius: '8px',
+                    border: '1px solid #374151',
+                    padding: '8px 12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)'
+                  }}
+                  itemStyle={{ color: '#FFFFFF', fontWeight: 600, fontSize: '13px' }}
+                  labelStyle={{ color: '#F3F4F6', fontWeight: 600, fontSize: '12px', marginBottom: '2px' }}
                 />
                 <Legend />
                 <Bar dataKey="purchase" name="Procurement Inflow (₹)" fill="#FAC4A2" radius={[4, 4, 0, 0]} />

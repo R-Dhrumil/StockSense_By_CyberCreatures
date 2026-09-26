@@ -29,6 +29,8 @@ import Modal from '../components/common/Modal';
 import { hasPermission, normalizeRole, ROLES } from '../utils/permissions';
 import { operationApi, warehouseApi } from '../services/api';
 
+import { matchesWarehouse, DEFAULT_WAREHOUSES } from '../utils/warehouseUtils';
+
 export default function Inventory({ 
   products = [], 
   setProducts, 
@@ -39,7 +41,7 @@ export default function Inventory({
   currentUser,
   isLoading = false 
 }) {
-  const facilityList = warehouses && warehouses.length > 0 ? warehouses : [];
+  const facilityList = warehouses && warehouses.length > 0 ? warehouses : DEFAULT_WAREHOUSES;
   const currentRole = normalizeRole(currentUser?.role);
   const isStaff = currentRole === ROLES.STAFF;
   const canValidateAdjustments = hasPermission.canValidateAdjustments(currentUser?.role);
@@ -174,8 +176,7 @@ export default function Inventory({
   // Filter products by selected warehouse safely
   const displayedProducts = (products || []).filter(p => {
     if (!p) return false;
-    if (selectedWarehouse === 'All') return true;
-    return (p.warehouse || '').toLowerCase().includes(selectedWarehouse.toLowerCase());
+    return matchesWarehouse(p.warehouse, selectedWarehouse, facilityList);
   });
 
   // Calculate high-level stock statistics safely

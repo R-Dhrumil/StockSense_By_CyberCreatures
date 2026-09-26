@@ -8,6 +8,9 @@ import { logger } from '../utils/logger.js';
  * Computes 5 Core Operational KPIs as specified in StockSense.pdf
  */
 export const getDashboardMetrics = catchAsync(async (req, res) => {
+  const { warehouse } = req.query;
+  const isAll = !warehouse || warehouse === 'All';
+
   let metrics = {
     totalProductsInStock: 24,
     lowStockCount: 3,
@@ -20,7 +23,7 @@ export const getDashboardMetrics = catchAsync(async (req, res) => {
 
   try {
     // 1. Products in Stock & Low Stock
-    const prodStatsRes = await query(`
+    let prodSql = `
       SELECT 
         COUNT(id)::int AS total_products,
         COUNT(CASE WHEN available_qty > 0 THEN 1 END)::int AS in_stock_count,
@@ -29,27 +32,51 @@ export const getDashboardMetrics = catchAsync(async (req, res) => {
         COALESCE(SUM(available_qty * COALESCE(price, 0)), 0)::numeric AS total_stock_value
       FROM products
       WHERE is_active = TRUE
-    `);
+    `;
+    const prodParams = [];
+    if (!isAll) {
+      prodSql += ` AND (warehouse ILIKE $1 OR warehouse = $1)`;
+      prodParams.push(`%${warehouse}%`);
+    }
+
+    const prodStatsRes = await query(prodSql, prodParams);
 
     if (prodStatsRes.rows && prodStatsRes.rows.length > 0) {
       const ps = prodStatsRes.rows[0];
-      metrics.totalProductsInStock = parseInt(ps.in_stock_count || ps.total_products || 24, 10);
+      metrics.totalProductsInStock = parseInt(ps.in_stock_count || ps.total_products || 0, 10);
       metrics.lowStockCount = parseInt(ps.low_stock_count || 0, 10);
       metrics.outOfStockCount = parseInt(ps.out_of_stock_count || 0, 10);
       metrics.totalStockValue = parseFloat(ps.total_stock_value || 0);
     }
 
     // 2. Operations counts by type and pending status
-    const opStatsRes = await query(`
+    let opSql = `
       SELECT 
-        type,
-        COUNT(CASE WHEN status IN ('DRAFT', 'WAITING', 'READY', 'PACKED') THEN 1 END)::int AS pending_count,
-        COUNT(CASE WHEN status = 'DONE' THEN 1 END)::int AS completed_count
-      FROM operations
-      GROUP BY type
-    `);
+        o.type,
+        COUNT(CASE WHEN o.status IN ('DRAFT', 'WAITING', 'READY', 'PACKED') THEN 1 END)::int AS pending_count,
+        COUNT(CASE WHEN o.status = 'DONE' THEN 1 END)::int AS completed_count
+      FROM operations o
+    `;
+    const opParams = [];
+    if (!isAll) {
+      opSql += `
+        LEFT JOIN locations sl ON sl.id = o.source_location_id
+        LEFT JOIN locations dl ON dl.id = o.dest_location_id
+        LEFT JOIN warehouses w ON (w.id = o.warehouse_id OR w.id = dl.warehouse_id OR w.id = sl.warehouse_id)
+        WHERE (w.name ILIKE $1 OR w.code ILIKE $1)
+      `;
+      opParams.push(`%${warehouse}%`);
+    }
+    opSql += ` GROUP BY o.type`;
+
+    const opStatsRes = await query(opSql, opParams);
 
     if (opStatsRes.rows && opStatsRes.rows.length > 0) {
+      if (!isAll) {
+        metrics.pendingReceipts = 0;
+        metrics.pendingDeliveries = 0;
+        metrics.internalTransfersScheduled = 0;
+      }
       for (const row of opStatsRes.rows) {
         if (row.type === 'RECEIPT') {
           metrics.pendingReceipts = parseInt(row.pending_count || 0, 10);
@@ -95,9 +122,16 @@ export const getOperationsSummary = catchAsync(async (req, res) => {
   }
 
   if (warehouseId && warehouseId !== 'ALL') {
-    conditions.push(`(o.warehouse_id = $${idx} OR w.name ILIKE $${idx + 1})`);
-    params.push(warehouseId, `%${warehouseId}%`);
-    idx += 2;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(warehouseId);
+    if (isUuid) {
+      conditions.push(`(o.warehouse_id = $${idx} OR w.id = $${idx})`);
+      params.push(warehouseId);
+      idx++;
+    } else {
+      conditions.push(`(w.name ILIKE $${idx} OR w.code ILIKE $${idx})`);
+      params.push(`%${warehouseId}%`);
+      idx++;
+    }
   }
 
   if (search) {

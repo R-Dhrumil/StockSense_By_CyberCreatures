@@ -73,6 +73,24 @@ export class User {
   }
 
   /**
+   * Find all active Admin and Inventory Manager users for stock alert notifications
+   */
+  static async findAdminsAndManagers() {
+    const text = `
+      SELECT id, name, email, role, department
+      FROM users
+      WHERE is_active = TRUE 
+        AND (
+          UPPER(role) IN ('ADMIN', 'INVENTORY_MANAGER') 
+          OR role ILIKE '%admin%' 
+          OR role ILIKE '%manager%'
+        )
+    `;
+    const res = await query(text);
+    return res.rows;
+  }
+
+  /**
    * Count total users
    */
   static async count() {
