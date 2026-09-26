@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Lock,
-  Mail,
-  User,
-  ArrowRight,
-  Warehouse,
-  Boxes,
-  CheckCircle2,
-  AlertCircle,
+import { 
+  Lock, 
+  Mail, 
+  User, 
+  ArrowRight, 
+  Warehouse, 
+  Boxes, 
+  CheckCircle2, 
+  AlertCircle, 
   KeyRound
 } from 'lucide-react';
 import logoDarkSvg from '../assets/logo-dark.svg';
@@ -18,7 +18,7 @@ import { authApi } from '../services/api';
 export default function Login({ onLoginSuccess }) {
   // Mode: 'signin' | 'signup'
   const [authMode, setAuthMode] = useState('signin');
-
+  
   // Sign In State
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
@@ -194,10 +194,10 @@ export default function Login({ onLoginSuccess }) {
       <div className="login-brand">
         <div className="login-brand-content">
           <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'center' }}>
-            <img
-              src={logoDarkSvg}
-              alt="StockSense by CyberCreatures"
-              style={{ height: '48px', width: 'auto', maxWidth: '280px', objectFit: 'contain' }}
+            <img 
+              src={logoDarkSvg} 
+              alt="StockSense by CyberCreatures" 
+              style={{ height: '48px', width: 'auto', maxWidth: '280px', objectFit: 'contain' }} 
             />
           </div>
 
@@ -236,10 +236,10 @@ export default function Login({ onLoginSuccess }) {
         <div className="login-form-container">
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-            <img
-              src={logoSvg}
-              alt="StockSense by CyberCreatures"
-              style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
+            <img 
+              src={logoDarkSvg} 
+              alt="StockSense by CyberCreatures" 
+              style={{ height: '40px', width: 'auto', objectFit: 'contain' }} 
             />
           </div>
 
