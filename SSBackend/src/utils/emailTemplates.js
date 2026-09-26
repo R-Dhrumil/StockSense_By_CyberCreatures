@@ -103,3 +103,83 @@ export const notificationAlertTemplate = ({ name, title, message, actionUrl, act
     }
   `);
 };
+
+/**
+ * Low Stock Inventory Alert Email Template
+ * Sends detailed breakdown of product, remaining available quantity, reorder threshold, and warehouse facility
+ */
+export const lowStockAlertEmailTemplate = ({
+  recipientName,
+  productName,
+  sku,
+  availableStock,
+  reorderLevel,
+  warehouseName,
+  locationName,
+  uom = 'units'
+}) => {
+  const isCritical = Number(availableStock) <= 0;
+  const badgeColor = isCritical ? '#dc2626' : '#d97706';
+  const badgeBg = isCritical ? '#fee2e2' : '#fef3c7';
+  const statusLabel = isCritical ? 'CRITICAL: OUT OF STOCK' : 'WARNING: LOW STOCK THRESHOLD REACHED';
+
+  return baseWrapper(`
+    <div style="margin-bottom: 16px;">
+      <span style="display: inline-block; background: ${badgeBg}; color: ${badgeColor}; font-weight: 700; padding: 6px 14px; border-radius: 20px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+        ⚠️ ${statusLabel}
+      </span>
+    </div>
+
+    <h2 style="color: #0f172a; margin-top: 0; font-size: 20px; font-weight: 700;">
+      Stock Alert for ${productName}
+    </h2>
+
+    <p style="color: #475569; font-size: 14px; line-height: 1.6;">
+      Hello <strong>${recipientName || 'Manager'}</strong>,<br>
+      This automated alert is triggered because the inventory for <strong>${productName}</strong> has reached or dropped below its minimum reorder threshold.
+    </p>
+
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; margin: 20px 0;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; width: 42%;"><strong>Product Name:</strong></td>
+          <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${productName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;"><strong>SKU / Part Code:</strong></td>
+          <td style="padding: 8px 0; color: #0f172a; font-family: monospace; font-weight: 600;">${sku || 'N/A'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;"><strong>Available Stock:</strong></td>
+          <td style="padding: 8px 0; color: ${badgeColor}; font-size: 16px; font-weight: 800;">
+            ${availableStock} ${uom}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;"><strong>Reorder Threshold:</strong></td>
+          <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${reorderLevel || 10} ${uom}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;"><strong>Warehouse:</strong></td>
+          <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${warehouseName || 'Main Central Hub'}</td>
+        </tr>
+        ${locationName ? `
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;"><strong>Rack / Sub-Location:</strong></td>
+          <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${locationName}</td>
+        </tr>
+        ` : ''}
+      </table>
+    </div>
+
+    <p style="color: #475569; font-size: 13px; line-height: 1.5;">
+      💡 <em>Recommendation: Create a Purchase Order / Receipt or initiate an internal transfer from another facility to replenish stock.</em>
+    </p>
+
+    <div style="text-align: center; margin-top: 25px;">
+      <a href="http://localhost:5173/purchase-orders" class="btn">
+        Create Inbound Receipt / PO
+      </a>
+    </div>
+  `);
+};

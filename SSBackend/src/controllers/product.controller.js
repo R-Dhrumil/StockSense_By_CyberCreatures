@@ -3,6 +3,7 @@ import { Category } from '../models/category.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import { checkProductStockAndAlert } from '../services/alert.service.js';
 
 /**
  * Get catalog products with search & filters
@@ -105,6 +106,10 @@ export const createProduct = catchAsync(async (req, res) => {
     image: image || 'Package'
   });
 
+  if (product?.id && (product.availableQty <= (product.reorderLevel || 10))) {
+    checkProductStockAndAlert(product.id, product.warehouse);
+  }
+
   return ApiResponse.send(res, 201, { product }, 'Product created successfully');
 });
 
@@ -128,6 +133,11 @@ export const updateProduct = catchAsync(async (req, res) => {
   }
 
   const updated = await Product.update(id, req.body);
+  
+  if (updated?.id && (updated.availableQty <= (updated.reorderLevel || 10))) {
+    checkProductStockAndAlert(updated.id, updated.warehouse);
+  }
+
   return ApiResponse.send(res, 200, { product: updated }, 'Product updated successfully');
 });
 
