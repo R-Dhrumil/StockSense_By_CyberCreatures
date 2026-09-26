@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Package,
   Plus,
@@ -59,6 +60,7 @@ const renderProductIcon = (iconKey) => {
 };
 
 export default function Products({ products, setProducts, onNotify }) {
+  const location = useLocation();
   const [selectedRows, setSelectedRows] = useState([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState('create'); // 'create' | 'edit'
@@ -147,6 +149,14 @@ export default function Products({ products, setProducts, onNotify }) {
     setActiveDrawerTab('basic');
     setIsDrawerOpen(true);
   };
+
+  // Quick Action auto-launch trigger
+  useEffect(() => {
+    if (location.state?.openModal === 'product') {
+      handleOpenCreate();
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Open Edit Drawer
   const handleOpenEdit = (product, e) => {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Boxes,
   Package,
@@ -35,6 +36,25 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
     notes: '',
     reference: `ADJ-${Date.now().toString().slice(-4)}`
   });
+
+  const location = useLocation();
+
+  // Quick Action auto-launch trigger
+  useEffect(() => {
+    if (location.state?.openModal === 'adjustment') {
+      setAdjustData({
+        productId: products[0]?.id || '',
+        warehouse: activeWarehouse !== 'All' ? activeWarehouse : 'West Coast Hub',
+        mode: 'add',
+        quantity: 10,
+        reason: 'Routine Cycle Count Adjustment',
+        notes: '',
+        reference: `ADJ-${Date.now().toString().slice(-4)}`
+      });
+      setIsAdjustModalOpen(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, products, activeWarehouse]);
 
   // Transfer form state
   const [transferData, setTransferData] = useState({

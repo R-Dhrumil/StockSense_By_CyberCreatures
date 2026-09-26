@@ -91,18 +91,15 @@ export default function App() {
 
   // Quick Action Handler from Topbar / Dashboard
   const handleQuickAction = (type) => {
+    const ts = Date.now();
     if (type === 'product') {
-      navigate('/products');
-      addToast('Quick Action', 'Navigated to Products. Click "Add New Product" to launch drawer.', 'info');
+      navigate('/products', { state: { openModal: 'product', ts } });
     } else if (type === 'adjustment') {
-      navigate('/inventory');
-      addToast('Quick Action', 'Navigated to Inventory. Open Guided Stock Adjustment.', 'info');
+      navigate('/inventory', { state: { openModal: 'adjustment', ts } });
     } else if (type === 'po') {
-      navigate('/purchase-orders');
-      addToast('Quick Action', 'Navigated to Purchase Orders. Open PO Creation Flow.', 'info');
+      navigate('/purchase-orders', { state: { openModal: 'po', ts } });
     } else if (type === 'so') {
-      navigate('/sales-orders');
-      addToast('Quick Action', 'Navigated to Sales Orders. Open Order Creation Flow.', 'info');
+      navigate('/sales-orders', { state: { openModal: 'so', ts } });
     }
   };
 

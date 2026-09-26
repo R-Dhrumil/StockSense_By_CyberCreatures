@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   ShoppingCart,
   Plus,
@@ -20,6 +21,7 @@ import Drawer from '../components/common/Drawer';
 import { INITIAL_PURCHASE_ORDERS, INITIAL_SUPPLIERS, INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
 
 export default function PurchaseOrders({ onNotify, products, setProducts }) {
+  const location = useLocation();
   const [orders, setOrders] = useState(INITIAL_PURCHASE_ORDERS);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -56,6 +58,14 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
     setCreateStep(1);
     setIsCreateModalOpen(true);
   };
+
+  // Quick Action auto-launch trigger
+  useEffect(() => {
+    if (location.state?.openModal === 'po') {
+      handleOpenCreate();
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleAddItemRow = () => {
     const defaultProd = products[0];

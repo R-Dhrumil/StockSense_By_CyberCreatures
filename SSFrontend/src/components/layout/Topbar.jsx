@@ -210,31 +210,6 @@ export default function Topbar({
                 </p>
               </div>
 
-              {/* Role Switcher for fast live testing */}
-              <div style={{ padding: '8px 12px' }}>
-                <p style={{ fontSize: '11px', color: 'var(--color-neutral-400)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>
-                  Simulate Role:
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                  {['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'].map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => {
-                        onChangeRole(role);
-                        setUserMenuOpen(false);
-                      }}
-                      className={`btn btn-xs ${currentUser.role === role ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ fontSize: '10px', height: '24px', padding: '0 6px', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                    >
-                      {role.split(' ')[0]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="dropdown-divider" />
-
               <button
                 type="button"
                 className="dropdown-item"

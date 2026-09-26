@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   TrendingUp,
   Plus,
@@ -19,6 +20,7 @@ import Modal from '../components/common/Modal';
 import { INITIAL_SALES_ORDERS, INITIAL_PRODUCTS } from '../data/mockData';
 
 export default function SalesOrders({ onNotify }) {
+  const location = useLocation();
   const [orders, setOrders] = useState(INITIAL_SALES_ORDERS);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -35,6 +37,23 @@ export default function SalesOrders({ onNotify }) {
     shippingCarrier: 'FedEx Priority',
     itemCount: 2
   });
+
+  // Quick Action auto-launch trigger
+  useEffect(() => {
+    if (location.state?.openModal === 'so') {
+      setNewOrder({
+        customer: '',
+        contact: '',
+        destination: '',
+        expectedDispatch: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+        total: 2500.00,
+        shippingCarrier: 'FedEx Priority',
+        itemCount: 2
+      });
+      setIsCreateModalOpen(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleCreateOrder = (e) => {
     e.preventDefault();
