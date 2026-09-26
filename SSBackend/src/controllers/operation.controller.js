@@ -346,10 +346,36 @@ export const validateDelivery = catchAsync(async (req, res) => {
       timestamp: new Date()
     });
 
+    broadcastEvent('stock:changed', {
+      operationId: validated.id,
+      operationNumber: validated.operationNumber,
+      type: 'DELIVERY',
+      timestamp: new Date()
+    });
+
     broadcastEvent('delivery:validated', {
       delivery: validated,
       timestamp: new Date()
     });
+
+    // Check for low stock items and trigger alert:low_stock
+    if (validated.items && validated.items.length > 0) {
+      for (const it of validated.items) {
+        if (it.newAvailableQty !== undefined && it.newAvailableQty <= 10) {
+          broadcastEvent('alert:low_stock', {
+            productId: it.productId,
+            productName: it.productName || 'Stock Product',
+            currentStock: it.newAvailableQty,
+            reorderLevel: 10,
+            severity: it.newAvailableQty === 0 ? 'CRITICAL' : 'WARNING',
+            message: it.newAvailableQty === 0 
+              ? `CRITICAL ALERT: Product is completely OUT OF STOCK after delivery!` 
+              : `LOW STOCK ALERT: Inventory dropped to ${it.newAvailableQty} units after delivery ${validated.operationNumber}.`,
+            timestamp: new Date()
+          });
+        }
+      }
+    }
   } catch (e) {}
 
   return ApiResponse.send(
@@ -636,10 +662,31 @@ export const createAdjustment = catchAsync(async (req, res) => {
       timestamp: new Date()
     });
 
+    broadcastEvent('stock:changed', {
+      productId: targetProduct,
+      delta: adjustment.delta,
+      newQty: adjustment.newAvailableQty || adjustment.countedQty,
+      timestamp: new Date()
+    });
+
     broadcastEvent('adjustment:created', {
       adjustment,
       timestamp: new Date()
     });
+
+    const newStock = adjustment.newAvailableQty ?? adjustment.countedQty;
+    if (newStock !== undefined && newStock <= 10) {
+      broadcastEvent('alert:low_stock', {
+        productId: targetProduct,
+        currentStock: newStock,
+        reorderLevel: 10,
+        severity: newStock === 0 ? 'CRITICAL' : 'WARNING',
+        message: newStock === 0 
+          ? `CRITICAL ALERT: Product is completely OUT OF STOCK after physical adjustment ${adjustment.operationNumber || adjustment.id}!` 
+          : `LOW STOCK ALERT: Product stock adjusted down to ${newStock} units (${adjustment.reason}).`,
+        timestamp: new Date()
+      });
+    }
   } catch (e) {}
 
   return ApiResponse.send(

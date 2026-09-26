@@ -365,7 +365,39 @@ export const operationApi = {
   },
 };
 
+// Stock Ledger Service Endpoints
+export const ledgerApi = {
+  getLedger: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/ledger?${queryStr}` : '/ledger';
+    return await api.get(endpoint);
+  },
+
+  exportLedgerUrl: () => {
+    const envUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    return `${envUrl}/ledger/export`;
+  }
+};
+
+// Dashboard Metrics & Dynamic Multi-Filter Service Endpoints
+export const dashboardApi = {
+  getMetrics: async () => {
+    return await api.get('/dashboard/metrics');
+  },
+
+  getOperationsSummary: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/dashboard/operations-summary?${queryStr}` : '/dashboard/operations-summary';
+    return await api.get(endpoint);
+  }
+};
+
 export default api;
+
 
 
 
