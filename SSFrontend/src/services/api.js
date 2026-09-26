@@ -173,4 +173,51 @@ export const authApi = {
   },
 };
 
+// Product Service Endpoints
+export const productApi = {
+  getProducts: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/products?${queryStr}` : '/products';
+    return await api.get(endpoint);
+  },
+
+  getProductById: async (id) => {
+    return await api.get(`/products/${id}`);
+  },
+
+  createProduct: async (productData) => {
+    return await api.post('/products', productData);
+  },
+
+  updateProduct: async (id, productData) => {
+    return await api.put(`/products/${id}`, productData);
+  },
+
+  deleteProduct: async (id) => {
+    return await api.delete(`/products/${id}`);
+  },
+};
+
+// Category Service Endpoints
+export const categoryApi = {
+  getCategories: async () => {
+    return await api.get('/categories');
+  },
+
+  createCategory: async (categoryData) => {
+    return await api.post('/categories', categoryData);
+  },
+
+  updateCategory: async (id, categoryData) => {
+    return await api.put(`/categories/${id}`, categoryData);
+  },
+
+  deleteCategory: async (id) => {
+    return await api.delete(`/categories/${id}`);
+  },
+};
+
 export default api;
+

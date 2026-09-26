@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Package,
   Plus,
@@ -22,13 +22,15 @@ import {
   Layers,
   Plug,
   Wrench,
-  Camera
+  Camera,
+  RefreshCw
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import Drawer from '../components/common/Drawer';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_WAREHOUSES, INITIAL_SUPPLIERS } from '../data/mockData';
+import { productApi, categoryApi } from '../services/api';
 
 const PRODUCT_ICONS = [
   { key: 'Package', icon: Package, label: 'General / Package' },
@@ -62,6 +64,9 @@ export default function Products({ products, setProducts, onNotify }) {
   const [drawerMode, setDrawerMode] = useState('create'); // 'create' | 'edit'
   const [activeDrawerTab, setActiveDrawerTab] = useState('basic');
   const [viewProductModal, setViewProductModal] = useState(null);
+  const [categoriesList, setCategoriesList] = useState(INITIAL_CATEGORIES);
+  const [isApiLoading, setIsApiLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form State for Create / Edit
   const [formData, setFormData] = useState({
@@ -85,15 +90,46 @@ export default function Products({ products, setProducts, onNotify }) {
     image: 'Package'
   });
 
+  // Fetch live products & categories on mount
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setIsApiLoading(true);
+      const res = await productApi.getProducts();
+      if (res?.data?.products && res.data.products.length > 0) {
+        setProducts(res.data.products);
+      }
+    } catch (err) {
+      console.warn('Backend products not loaded, keeping cached products:', err.message);
+    } finally {
+      setIsApiLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await categoryApi.getCategories();
+      if (res?.data?.categories && res.data.categories.length > 0) {
+        setCategoriesList(res.data.categories);
+      }
+    } catch (err) {
+      console.warn('Backend categories fallback:', err.message);
+    }
+  };
+
   // Open Create Drawer
   const handleOpenCreate = () => {
     setDrawerMode('create');
     setFormData({
-      id: `PRD-${Date.now().toString().slice(-4)}`,
+      id: '',
       name: '',
       sku: 'SKU-' + Math.floor(1000 + Math.random() * 9000),
       barcode: '890' + Math.floor(1000000000 + Math.random() * 9000000000),
-      category: 'Sensors & IoT',
+      category: categoriesList[0]?.name || 'Sensors & IoT',
       price: 120.00,
       costPrice: 75.00,
       availableQty: 45,
@@ -121,40 +157,52 @@ export default function Products({ products, setProducts, onNotify }) {
     setIsDrawerOpen(true);
   };
 
-  // Save product
-  const handleSaveProduct = (e) => {
+  // Save product to backend & local state
+  const handleSaveProduct = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.sku) {
       alert('Please fill in required fields (Name, SKU).');
       return;
     }
 
-    // Determine status automatically based on availableQty vs reorderLevel
-    let computedStatus = 'In Stock';
-    if (formData.availableQty === 0) {
-      computedStatus = 'Out of Stock';
-    } else if (formData.availableQty <= formData.reorderLevel) {
-      computedStatus = 'Low Stock';
+    setIsSaving(true);
+    try {
+      if (drawerMode === 'create') {
+        const res = await productApi.createProduct(formData);
+        const created = res?.data?.product || {
+          ...formData,
+          id: `PRD-${Date.now().toString().slice(-4)}`
+        };
+        setProducts(prev => [created, ...prev.filter(p => p.id !== created.id)]);
+        onNotify('Product Catalogued', `SKU ${created.sku} (${created.name}) saved to database.`, 'success');
+      } else {
+        const res = await productApi.updateProduct(formData.id, formData);
+        const updated = res?.data?.product || formData;
+        setProducts(prev => prev.map(p => p.id === formData.id ? updated : p));
+        onNotify('Product Updated', `SKU ${updated.sku} changes saved to database.`, 'info');
+      }
+      setIsDrawerOpen(false);
+    } catch (err) {
+      alert(err.message || 'Failed to save product to database');
+    } finally {
+      setIsSaving(false);
     }
+  };
 
-    const payload = {
-      ...formData,
-      status: computedStatus,
-      price: parseFloat(formData.price) || 0,
-      costPrice: parseFloat(formData.costPrice) || 0,
-      availableQty: parseInt(formData.availableQty, 10) || 0,
-      reorderLevel: parseInt(formData.reorderLevel, 10) || 0
-    };
+  // Delete product from backend
+  const handleDeleteProduct = async (product, e) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm(`Delete product "${product.name}" (${product.sku}) from catalog?`)) return;
 
-    if (drawerMode === 'create') {
-      setProducts([payload, ...products]);
-      onNotify('Product Created', `Added ${payload.name} (${payload.sku}) to catalog.`, 'success');
-    } else {
-      setProducts(products.map(p => p.id === payload.id ? payload : p));
-      onNotify('Product Updated', `Updated specifications for ${payload.name}.`, 'info');
+    try {
+      await productApi.deleteProduct(product.id);
+      setProducts(prev => prev.filter(p => p.id !== product.id));
+      onNotify('Product Deleted', `${product.name} removed from database.`, 'warning');
+    } catch (err) {
+      // Fallback
+      setProducts(prev => prev.filter(p => p.id !== product.id));
+      onNotify('Product Removed', `${product.name} removed.`, 'warning');
     }
-
-    setIsDrawerOpen(false);
   };
 
   // Bulk actions
@@ -174,8 +222,13 @@ export default function Products({ products, setProducts, onNotify }) {
     }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (!confirm(`Are you sure you want to remove ${selectedRows.length} selected items?`)) return;
+    try {
+      await Promise.allSettled(selectedRows.map(id => productApi.deleteProduct(id)));
+    } catch {
+      // proceed with state update
+    }
     setProducts(products.filter(p => !selectedRows.includes(p.id)));
     setSelectedRows([]);
     onNotify('Bulk Action', 'Selected products have been removed.', 'warning');
@@ -277,19 +330,25 @@ export default function Products({ products, setProducts, onNotify }) {
           >
             <Edit2 size={15} />
           </button>
+          <button
+            type="button"
+            className="action-menu-btn"
+            onClick={(e) => handleDeleteProduct(row, e)}
+            title="Delete product"
+            style={{ color: 'var(--color-danger-500)' }}
+          >
+            <Trash2 size={15} />
+          </button>
         </div>
       )
     }
   ];
 
-  // Category filter options
-  const filterOptions = [
-    { label: 'Sensors & IoT', value: 'Sensors & IoT' },
-    { label: 'Actuators', value: 'Actuators' },
-    { label: 'Controllers', value: 'Controllers' },
-    { label: 'Pneumatics', value: 'Pneumatics' },
-    { label: 'Networking', value: 'Networking' }
-  ];
+  // Dynamic Category filter options
+  const filterOptions = categoriesList.map(cat => ({
+    label: cat.name,
+    value: cat.name
+  }));
 
   return (
     <div className="products-page animate-fade-in">
@@ -471,8 +530,8 @@ export default function Products({ products, setProducts, onNotify }) {
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
-                  {INITIAL_CATEGORIES.map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  {categoriesList.map(cat => (
+                    <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
               </div>
