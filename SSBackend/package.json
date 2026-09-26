@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "db:init": "node scripts/init-db.js",
     "seed": "node scripts/seed.js",
-    "seed:catalog": "node scripts/seed-catalog.js"
+    "seed:catalog": "node scripts/seed-catalog.js",
+    "seed:inventory": "node scripts/seed-inventory.js"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

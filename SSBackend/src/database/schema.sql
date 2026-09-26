@@ -33,24 +33,61 @@ CREATE TABLE IF NOT EXISTS otps (
 
 CREATE INDEX IF NOT EXISTS idx_otps_email ON otps(email);
 
--- 3. Products Table
+-- 3. Categories Table
+CREATE TABLE IF NOT EXISTS categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(150) NOT NULL UNIQUE,
+  code VARCHAR(50) NOT NULL UNIQUE,
+  description TEXT,
+  icon VARCHAR(50) DEFAULT 'Layers',
+  status VARCHAR(50) DEFAULT 'Active',
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
+
+-- 4. Products Table
 CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   sku VARCHAR(100) NOT NULL UNIQUE,
   barcode VARCHAR(100),
+  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  category_name VARCHAR(100),
   category VARCHAR(100),
+  uom VARCHAR(50) NOT NULL DEFAULT 'pcs',
+  unit VARCHAR(50) NOT NULL DEFAULT 'pcs',
   price NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
   cost_price NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+  available_qty INT NOT NULL DEFAULT 0,
+  reserved_qty INT NOT NULL DEFAULT 0,
   reorder_level INT NOT NULL DEFAULT 10,
-  unit VARCHAR(50) NOT NULL DEFAULT 'pcs',
+  warehouse VARCHAR(150),
+  status VARCHAR(50) NOT NULL DEFAULT 'In Stock',
+  supplier VARCHAR(150),
   description TEXT,
+  image VARCHAR(255),
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
+
+-- Backward compatibility columns if products table existed before
+ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES categories(id) ON DELETE SET NULL;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS category_name VARCHAR(100);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS category VARCHAR(100);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS uom VARCHAR(50) DEFAULT 'pcs';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS unit VARCHAR(50) DEFAULT 'pcs';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS available_qty INT DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_qty INT DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS warehouse VARCHAR(150);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'In Stock';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier VARCHAR(150);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image VARCHAR(255);
 
 -- 4. Warehouses Table
 CREATE TABLE IF NOT EXISTS warehouses (
