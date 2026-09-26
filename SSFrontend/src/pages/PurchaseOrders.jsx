@@ -29,7 +29,8 @@ import { hasPermission } from '../utils/permissions';
 
 export default function PurchaseOrders({ onNotify, products, setProducts, warehouses = [], currentUser }) {
   const facilityList = (warehouses && warehouses.length > 0) ? warehouses : [];
-  const SUPPLIER_LIST = ['Apex Dynamics Corp', 'LuminoTech Precision', 'Vortex Flow Systems', 'ElectroCore Global', 'Titanium Mechanical Inc'];
+  const DEFAULT_SUPPLIERS = ['Apex Dynamics Corp', 'LuminoTech Precision', 'Vortex Flow Systems', 'ElectroCore Global', 'Titanium Mechanical Inc'];
+  const [supplierList, setSupplierList] = useState(DEFAULT_SUPPLIERS);
   const canCreateReceipts = hasPermission.canCreateReceipts(currentUser?.role);
   const canValidateReceipts = hasPermission.canValidateReceipts(currentUser?.role);
   const location = useLocation();
@@ -53,9 +54,25 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
   const [ledgerLogs, setLedgerLogs] = useState([]);
   const [loadingLedger, setLoadingLedger] = useState(false);
 
+  // Fetch dynamic suppliers list
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const res = await fetch('/api/v1/suppliers');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data?.suppliers && data.data.suppliers.length > 0) {
+            setSupplierList(data.data.suppliers.map(s => s.name));
+          }
+        }
+      } catch (e) {}
+    };
+    fetchSuppliers();
+  }, []);
+
   // New PO / Receipt Form State
   const [newPo, setNewPo] = useState({
-    supplier: SUPPLIER_LIST[0],
+    supplier: DEFAULT_SUPPLIERS[0],
     warehouseId: facilityList[0]?.id || '',
     warehouseName: facilityList[0]?.name || 'Main Central Hub',
     locationId: '',
@@ -168,7 +185,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
   const handleOpenCreate = () => {
     const defaultWarehouse = facilityList[0];
     setNewPo({
-      supplier: SUPPLIER_LIST[0],
+      supplier: supplierList[0] || 'Apex Dynamics Corp',
       warehouseId: defaultWarehouse?.id || '',
       warehouseName: defaultWarehouse?.name || 'Main Central Hub',
       locationId: '',
@@ -776,7 +793,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
                 value={newPo.supplier}
                 onChange={(e) => setNewPo({ ...newPo, supplier: e.target.value })}
               >
-                {SUPPLIER_LIST.map(s => (
+                {supplierList.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>

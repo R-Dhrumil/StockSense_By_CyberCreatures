@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Truck,
   Plus,
@@ -10,18 +10,23 @@ import {
   IndianRupee,
   Package,
   Edit2,
+  Trash2,
   ExternalLink,
   Search,
-  ShoppingCart
+  ShoppingCart,
+  RefreshCw
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import Modal from '../components/common/Modal';
 
 import { hasPermission } from '../utils/permissions';
+import { supplierApi } from '../services/api';
 
 export default function Suppliers({ onNotify, currentUser }) {
   const canManageSuppliers = hasPermission.canCreateReceipts(currentUser?.role);
   const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -38,17 +43,36 @@ export default function Suppliers({ onNotify, currentUser }) {
     suppliedCategories: 'Sensors & IoT, Actuators'
   });
 
+  // Fetch Suppliers from Database / Backend API
+  const loadSuppliers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await supplierApi.getSuppliers();
+      const list = res?.data?.suppliers || [];
+      setSuppliers(list);
+    } catch (err) {
+      console.error('Failed to load suppliers from database:', err);
+      onNotify('Error Loading Suppliers', err.message || 'Could not fetch suppliers from database', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [onNotify]);
+
+  useEffect(() => {
+    loadSuppliers();
+  }, [loadSuppliers]);
+
   const handleOpenCreate = () => {
     setModalMode('create');
     setFormData({
-      id: `SUP-0${suppliers.length + 1}`,
+      id: '',
       name: '',
       contactPerson: '',
       email: '',
       phone: '',
       location: '',
       rating: 4.5,
-      leadTimeDays: 10,
+      leadTimeDays: 7,
       paymentTerms: 'Net 30',
       suppliedCategories: 'Sensors & IoT, Actuators'
     });
@@ -60,36 +84,86 @@ export default function Suppliers({ onNotify, currentUser }) {
     setModalMode('edit');
     setFormData({
       ...sup,
-      suppliedCategories: Array.isArray(sup.suppliedCategories) ? sup.suppliedCategories.join(', ') : sup.suppliedCategories
+      contactPerson: sup.contactPerson || sup.contact_person || '',
+      leadTimeDays: sup.leadTimeDays || sup.lead_time_days || 7,
+      paymentTerms: sup.paymentTerms || sup.payment_terms || 'Net 30',
+      suppliedCategories: Array.isArray(sup.suppliedCategories)
+        ? sup.suppliedCategories.join(', ')
+        : (sup.suppliedCategories || sup.supplied_categories || '')
     });
     setIsModalOpen(true);
   };
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email) return;
-
-    const formattedCategories = typeof formData.suppliedCategories === 'string'
-      ? formData.suppliedCategories.split(',').map(c => c.trim())
-      : formData.suppliedCategories;
-
-    const payload = {
-      ...formData,
-      suppliedCategories: formattedCategories,
-      rating: parseFloat(formData.rating) || 4.5,
-      leadTimeDays: parseInt(formData.leadTimeDays, 10) || 7,
-      activeOrders: formData.activeOrders || 0
-    };
-
-    if (modalMode === 'create') {
-      setSuppliers([...suppliers, payload]);
-      onNotify('Supplier Added', `${payload.name} added to vendor network.`, 'success');
-    } else {
-      setSuppliers(suppliers.map(s => s.id === payload.id ? payload : s));
-      onNotify('Supplier Updated', `Updated vendor records for ${payload.name}.`, 'info');
+  const handleSave = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!formData.name || !formData.email) {
+      onNotify('Validation Error', 'Supplier Legal Name and Email are required', 'warning');
+      return;
     }
 
-    setIsModalOpen(false);
+    const formattedCategories = typeof formData.suppliedCategories === 'string'
+      ? formData.suppliedCategories
+      : (Array.isArray(formData.suppliedCategories) ? formData.suppliedCategories.join(', ') : '');
+
+    const payload = {
+      name: formData.name.trim(),
+      contactPerson: (formData.contactPerson || '').trim(),
+      email: formData.email.trim(),
+      phone: (formData.phone || '').trim(),
+      location: (formData.location || '').trim(),
+      rating: parseFloat(formData.rating) || 4.5,
+      leadTimeDays: parseInt(formData.leadTimeDays, 10) || 7,
+      paymentTerms: formData.paymentTerms || 'Net 30',
+      suppliedCategories: formattedCategories,
+      activeOrders: parseInt(formData.activeOrders || 0, 10)
+    };
+
+    setIsSubmitting(true);
+    try {
+      if (modalMode === 'create') {
+        const res = await supplierApi.createSupplier(payload);
+        const created = res?.data?.supplier;
+        if (created) {
+          setSuppliers(prev => [created, ...prev]);
+          onNotify('Supplier Added', `${created.name} successfully registered in database.`, 'success');
+        } else {
+          await loadSuppliers();
+          onNotify('Supplier Added', 'New vendor saved to database.', 'success');
+        }
+      } else {
+        const res = await supplierApi.updateSupplier(formData.id, payload);
+        const updated = res?.data?.supplier;
+        if (updated) {
+          setSuppliers(prev => prev.map(s => s.id === formData.id ? updated : s));
+          if (selectedSupplier?.id === formData.id) {
+            setSelectedSupplier(updated);
+          }
+        } else {
+          await loadSuppliers();
+        }
+        onNotify('Supplier Updated', `Updated vendor record for ${payload.name} in database.`, 'info');
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Failed to save supplier to database:', err);
+      onNotify('Save Failed', err.message || 'Error saving supplier to database', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteSupplier = async (supplierId, supplierName) => {
+    if (!window.confirm(`Are you sure you want to deactivate ${supplierName}?`)) return;
+    try {
+      await supplierApi.deleteSupplier(supplierId);
+      setSuppliers(prev => prev.filter(s => s.id !== supplierId));
+      if (selectedSupplier?.id === supplierId) {
+        setSelectedSupplier(null);
+      }
+      onNotify('Supplier Deactivated', `${supplierName} removed from active vendor directory.`, 'info');
+    } catch (err) {
+      onNotify('Delete Failed', err.message || 'Could not deactivate supplier', 'error');
+    }
   };
 
   // Columns definition
@@ -185,14 +259,28 @@ export default function Suppliers({ onNotify, currentUser }) {
             <ExternalLink size={15} />
           </button>
           {canManageSuppliers && (
-            <button
-              type="button"
-              className="action-menu-btn"
-              onClick={(e) => handleOpenEdit(row, e)}
-              title="Edit Vendor"
-            >
-              <Edit2 size={14} />
-            </button>
+            <>
+              <button
+                type="button"
+                className="action-menu-btn"
+                onClick={(e) => handleOpenEdit(row, e)}
+                title="Edit Vendor"
+              >
+                <Edit2 size={14} />
+              </button>
+              <button
+                type="button"
+                className="action-menu-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteSupplier(row.id, row.name);
+                }}
+                title="Deactivate Vendor"
+                style={{ color: 'var(--color-danger-600)' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
           )}
         </div>
       )
@@ -216,6 +304,18 @@ export default function Suppliers({ onNotify, currentUser }) {
         </div>
 
         <div className="page-header-actions">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={loadSuppliers}
+            disabled={loading}
+            title="Reload from Database"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
+
           {canManageSuppliers ? (
             <button
               type="button"
@@ -237,6 +337,8 @@ export default function Suppliers({ onNotify, currentUser }) {
       <DataTable
         columns={columns}
         data={suppliers}
+        isLoading={loading}
+        emptyMessage="No suppliers found in database. Click 'Add Supplier' to register a vendor."
         searchPlaceholder="Search vendor name, contact person, or location..."
         onRowClick={(row) => setSelectedSupplier(row)}
       />
@@ -380,9 +482,10 @@ export default function Suppliers({ onNotify, currentUser }) {
             <button
               type="button"
               className="btn btn-primary"
+              disabled={isSubmitting}
               onClick={handleSave}
             >
-              {modalMode === 'create' ? 'Save Vendor' : 'Update Vendor'}
+              {isSubmitting ? 'Saving to Database...' : (modalMode === 'create' ? 'Save Vendor' : 'Update Vendor')}
             </button>
           </div>
         }

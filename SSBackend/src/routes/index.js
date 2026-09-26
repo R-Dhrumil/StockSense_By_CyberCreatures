@@ -10,6 +10,7 @@ import operationRoutes from './operation.routes.js';
 import ledgerRoutes from './ledger.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import exportRoutes from './export.routes.js';
+import supplierRoutes from './supplier.routes.js';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.use('/operations', operationRoutes);
 router.use('/ledger', ledgerRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/export', exportRoutes);
+router.use('/suppliers', supplierRoutes);
 
 export default router;
 

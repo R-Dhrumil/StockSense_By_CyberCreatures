@@ -47,6 +47,27 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
 
+-- 3b. Suppliers Table
+CREATE TABLE IF NOT EXISTS suppliers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL UNIQUE,
+  contact_person VARCHAR(150),
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(50),
+  location VARCHAR(255),
+  rating NUMERIC(3, 2) DEFAULT 4.5,
+  lead_time_days INT DEFAULT 7,
+  payment_terms VARCHAR(50) DEFAULT 'Net 30',
+  supplied_categories TEXT DEFAULT '',
+  active_orders INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name);
+CREATE INDEX IF NOT EXISTS idx_suppliers_email ON suppliers(email);
+
 -- 4. Products Table
 CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -408,6 +408,33 @@ export const dashboardApi = {
   }
 };
 
+// Supplier Management Service Endpoints
+export const supplierApi = {
+  getSuppliers: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/suppliers?${queryStr}` : '/suppliers';
+    return await api.get(endpoint);
+  },
+
+  getSupplierById: async (id) => {
+    return await api.get(`/suppliers/${id}`);
+  },
+
+  createSupplier: async (supplierData) => {
+    return await api.post('/suppliers', supplierData);
+  },
+
+  updateSupplier: async (id, supplierData) => {
+    return await api.put(`/suppliers/${id}`, supplierData);
+  },
+
+  deleteSupplier: async (id) => {
+    return await api.delete(`/suppliers/${id}`);
+  },
+};
+
 export default api;
 
 
