@@ -25,7 +25,6 @@ import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import Drawer from '../components/common/Drawer';
 import KpiCard from '../components/common/KpiCard';
-import { INITIAL_PURCHASE_ORDERS, INITIAL_SUPPLIERS, INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
 
 export default function PurchaseOrders({ onNotify, products, setProducts, warehouses = [], currentUser }) {

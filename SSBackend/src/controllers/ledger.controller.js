@@ -1,6 +1,8 @@
 import { StockLedger } from '../models/ledger.model.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import { exportToPdf } from '../utils/exportPdf.js';
+import { exportToExcel } from '../utils/exportExcel.js';
 
 /**
  * GET /api/v1/ledger
@@ -34,34 +36,73 @@ export const getLedgerRecords = catchAsync(async (req, res) => {
 
 /**
  * GET /api/v1/ledger/export
- * Export stock ledger audit records in CSV format
+ * Export stock ledger audit records in PDF or Excel format (default: PDF)
  */
 export const exportLedger = catchAsync(async (req, res) => {
+  const format = (req.query.format || 'pdf').toLowerCase();
   const records = await StockLedger.findAll({ limit: 1000 });
 
-  const headers = ['Audit ID', 'Timestamp', 'Operation Type', 'Product Name', 'SKU', 'Quantity Delta', 'Balance After', 'Source Location', 'Destination Location', 'Reference Number', 'Audit Reason', 'Auditor'];
-  
-  const csvRows = [
-    headers.join(','),
-    ...records.map(r => [
-      `"${r.id || ''}"`,
-      `"${r.timestamp ? new Date(r.timestamp).toISOString() : ''}"`,
-      `"${r.type || r.moveType || ''}"`,
-      `"${(r.productName || '').replace(/"/g, '""')}"`,
-      `"${r.sku || ''}"`,
-      `"${r.quantityChange !== undefined ? r.quantityChange : ''}"`,
-      `"${r.balanceAfter !== undefined ? r.balanceAfter : ''}"`,
-      `"${(r.sourceLocation || '').replace(/"/g, '""')}"`,
-      `"${(r.destLocation || '').replace(/"/g, '""')}"`,
-      `"${r.reference || ''}"`,
-      `"${(r.reason || '').replace(/"/g, '""')}"`,
-      `"${r.user || ''}"`
-    ].join(','))
+  const formattedData = records.map(r => ({
+    id: (r.id || '').substring(0, 10),
+    date: r.timestamp ? new Date(r.timestamp).toLocaleDateString() : '',
+    type: r.type || r.moveType || '',
+    product: r.productName || '',
+    sku: r.sku || '',
+    qty: r.quantityChange !== undefined ? r.quantityChange : '',
+    balance: r.balanceAfter !== undefined ? r.balanceAfter : '',
+    reference: r.reference || '',
+    user: r.user || ''
+  }));
+
+  const headers = [
+    { label: 'Audit ID', property: 'id', width: 60 },
+    { label: 'Date', property: 'date', width: 60 },
+    { label: 'Type', property: 'type', width: 65 },
+    { label: 'Product Name', property: 'product', width: 130 },
+    { label: 'SKU', property: 'sku', width: 75 },
+    { label: 'Delta', property: 'qty', width: 45 },
+    { label: 'Balance', property: 'balance', width: 50 },
+    { label: 'Reference', property: 'reference', width: 75 },
+    { label: 'Auditor', property: 'user', width: 60 }
   ];
 
-  const csvContent = csvRows.join('\n');
+  if (format === 'excel' || format === 'xlsx') {
+    const columns = headers.map(h => ({ header: h.label, key: h.property, width: 16 }));
+    return await exportToExcel(res, {
+      data: formattedData,
+      columns,
+      filename: `StockSense_Audit_Ledger_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: 'Stock Movements'
+    });
+  }
 
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', `attachment; filename="StockSense_Audit_Ledger_${new Date().toISOString().slice(0,10)}.csv"`);
-  return res.status(200).send(csvContent);
+  if (format === 'csv') {
+    const csvHeaders = ['Audit ID', 'Timestamp', 'Operation Type', 'Product Name', 'SKU', 'Quantity Delta', 'Balance After', 'Reference Number', 'Auditor'];
+    const csvRows = [
+      csvHeaders.join(','),
+      ...records.map(r => [
+        `"${r.id || ''}"`,
+        `"${r.timestamp ? new Date(r.timestamp).toISOString() : ''}"`,
+        `"${r.type || r.moveType || ''}"`,
+        `"${(r.productName || '').replace(/"/g, '""')}"`,
+        `"${r.sku || ''}"`,
+        `"${r.quantityChange !== undefined ? r.quantityChange : ''}"`,
+        `"${r.balanceAfter !== undefined ? r.balanceAfter : ''}"`,
+        `"${r.reference || ''}"`,
+        `"${r.user || ''}"`
+      ].join(','))
+    ];
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="StockSense_Audit_Ledger_${new Date().toISOString().slice(0, 10)}.csv"`);
+    return res.status(200).send(csvRows.join('\n'));
+  }
+
+  // Default: Stream real PDF document
+  return await exportToPdf(res, {
+    title: 'StockSense Central Stock Ledger Audit Trail',
+    data: formattedData,
+    headers,
+    filename: `StockSense_Audit_Ledger_${new Date().toISOString().slice(0, 10)}.pdf`
+  });
 });
+

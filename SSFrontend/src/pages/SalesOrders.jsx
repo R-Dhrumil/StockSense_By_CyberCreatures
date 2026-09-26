@@ -26,7 +26,7 @@ import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import KpiCard from '../components/common/KpiCard';
-import { INITIAL_SALES_ORDERS, INITIAL_PRODUCTS } from '../data/mockData';
+
 import { hasPermission } from '../utils/permissions';
 import { operationApi, productApi } from '../services/api';
 

@@ -7,8 +7,10 @@ import {
   ChevronRight, 
   Download, 
   SlidersHorizontal,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
+import { downloadPdfReport, downloadExcelReport } from '../../utils/exportUtils';
 
 export default function DataTable({
   columns = [],
@@ -94,24 +96,38 @@ export default function DataTable({
     }
   };
 
-  const handleExportCSV = () => {
-    if (!data.length) return;
-    const headers = columns.map(c => c.header).join(',');
-    const rows = processedData.map(item => {
-      return columns.map(col => {
-        const val = col.accessor ? item[col.accessor] : '';
-        return `"${String(val || '').replace(/"/g, '""')}"`;
-      }).join(',');
-    }).join('\n');
+  const handleExportPDF = async () => {
+    if (!processedData.length) return;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const exportCols = columns.filter(c => c.header && c.accessor).map(c => ({
+      header: c.header,
+      accessor: c.accessor
+    }));
 
-    const csvContent = "data:text/csv;charset=utf-8," + headers + '\n' + rows;
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `stocksense_export_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await downloadPdfReport({
+      title: 'StockSense Inventory Data Report',
+      subtitle: `Filtered Records: ${processedData.length} entries | Generated: ${new Date().toLocaleDateString()}`,
+      columns: exportCols,
+      data: processedData,
+      filename: `StockSense_Export_${dateStr}.pdf`
+    });
+  };
+
+  const handleExportExcel = async () => {
+    if (!processedData.length) return;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const exportCols = columns.filter(c => c.header && c.accessor).map(c => ({
+      header: c.header,
+      accessor: c.accessor
+    }));
+
+    await downloadExcelReport({
+      title: 'StockSense Inventory Data Report',
+      sheetName: 'Exported Records',
+      columns: exportCols,
+      data: processedData,
+      filename: `StockSense_Export_${dateStr}.xlsx`
+    });
   };
 
   return (
@@ -158,16 +174,27 @@ export default function DataTable({
           )}
         </div>
 
-        <div className="table-toolbar-right">
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={handleExportCSV}
-            title="Export filtered records as CSV"
-          >
-            <Download size={15} />
-            <span>Export CSV</span>
-          </button>
+        <div className="table-toolbar-right" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={handleExportPDF}
+              title="Download filtered records as PDF"
+            >
+              <FileText size={14} />
+              <span>Export PDF</span>
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={handleExportExcel}
+              title="Download filtered records as Excel (.xlsx)"
+            >
+              <FileSpreadsheet size={14} />
+              <span>Export Excel</span>
+            </button>
+          </div>
           {actionButton}
         </div>
       </div>

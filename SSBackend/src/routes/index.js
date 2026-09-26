@@ -9,6 +9,7 @@ import warehouseRoutes from './warehouse.routes.js';
 import operationRoutes from './operation.routes.js';
 import ledgerRoutes from './ledger.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
+import exportRoutes from './export.routes.js';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/warehouses', warehouseRoutes);
 router.use('/operations', operationRoutes);
 router.use('/ledger', ledgerRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/export', exportRoutes);
 
 export default router;
 

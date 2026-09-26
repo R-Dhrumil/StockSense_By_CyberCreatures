@@ -21,6 +21,7 @@ import Modal from '../components/common/Modal';
 
 import { normalizeRole } from '../utils/permissions';
 import { ledgerApi } from '../services/api';
+import { downloadPdfReport, downloadExcelReport } from '../utils/exportUtils';
 
 export default function StockMovements({ onNotify, currentUser }) {
   const currentRole = normalizeRole(currentUser?.role);
@@ -65,10 +66,54 @@ export default function StockMovements({ onNotify, currentUser }) {
     loadLedger();
   }, [loadLedger]);
 
-  // Handle CSV Export
-  const handleExportCSV = () => {
-    window.open(ledgerApi.exportLedgerUrl(), '_blank');
-    onNotify('Export Initiated', 'Stock ledger CSV download started.', 'info');
+  // Handle PDF Export
+  const handleExportPDF = async () => {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const exportCols = [
+      { header: 'Audit ID', accessor: 'id' },
+      { header: 'Date', accessor: 'date' },
+      { header: 'Operation Type', accessor: 'type' },
+      { header: 'Product Name', accessor: 'product' },
+      { header: 'SKU', accessor: 'sku' },
+      { header: 'Qty Delta', accessor: 'qty' },
+      { header: 'Origin', accessor: 'source' },
+      { header: 'Destination', accessor: 'destination' },
+      { header: 'Reference', accessor: 'reference' },
+      { header: 'Auditor', accessor: 'user' }
+    ];
+    await downloadPdfReport({
+      title: 'StockSense Central Stock Ledger Audit Trail',
+      subtitle: `Total Move Records: ${movements.length} | Generated: ${new Date().toLocaleDateString()}`,
+      columns: exportCols,
+      data: movements,
+      filename: `StockSense_Stock_Ledger_${dateStr}.pdf`
+    });
+    onNotify?.('PDF Downloaded', 'Stock ledger audit trail exported to PDF.', 'success');
+  };
+
+  // Handle Excel (.xlsx) Export
+  const handleExportExcel = async () => {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const exportCols = [
+      { header: 'Audit ID', accessor: 'id' },
+      { header: 'Date', accessor: 'date' },
+      { header: 'Operation Type', accessor: 'type' },
+      { header: 'Product Name', accessor: 'product' },
+      { header: 'SKU', accessor: 'sku' },
+      { header: 'Qty Delta', accessor: 'qty' },
+      { header: 'Origin', accessor: 'source' },
+      { header: 'Destination', accessor: 'destination' },
+      { header: 'Reference', accessor: 'reference' },
+      { header: 'Auditor', accessor: 'user' }
+    ];
+    await downloadExcelReport({
+      title: 'StockSense Central Stock Ledger Audit Trail',
+      sheetName: 'Stock Movements',
+      columns: exportCols,
+      data: movements,
+      filename: `StockSense_Stock_Ledger_${dateStr}.xlsx`
+    });
+    onNotify?.('Excel Downloaded', 'Stock ledger audit trail exported to Excel (.xlsx).', 'success');
   };
 
   const columns = [
@@ -187,10 +232,21 @@ export default function StockMovements({ onNotify, currentUser }) {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={handleExportCSV}
+            onClick={handleExportPDF}
+            title="Download audit trail as PDF"
           >
-            <Download size={15} />
-            <span>Export CSV / Excel</span>
+            <FileText size={15} />
+            <span>Export PDF</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleExportExcel}
+            title="Download audit trail as Excel (.xlsx)"
+          >
+            <FileSpreadsheet size={15} />
+            <span>Export Excel</span>
           </button>
         </div>
       </div>

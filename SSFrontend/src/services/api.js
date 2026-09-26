@@ -375,9 +375,21 @@ export const ledgerApi = {
     return await api.get(endpoint);
   },
 
-  exportLedgerUrl: () => {
+  exportLedgerUrl: (format = 'pdf') => {
     const envUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-    return `${envUrl}/ledger/export`;
+    return `${envUrl}/ledger/export?format=${format}`;
+  }
+};
+
+// Export Service Endpoints
+export const exportApi = {
+  getReportPdfUrl: (type) => {
+    const envUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    return `${envUrl}/export/reports/${type}?format=pdf`;
+  },
+  getReportExcelUrl: (type) => {
+    const envUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    return `${envUrl}/export/reports/${type}?format=excel`;
   }
 };
 

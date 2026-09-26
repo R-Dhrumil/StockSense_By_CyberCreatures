@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart3,
-  Download,
   Calendar,
   Warehouse,
-  Layers,
   TrendingUp,
   IndianRupee,
   Clock,
   AlertTriangle,
-  ArrowUpRight,
   FileSpreadsheet,
-  CheckCircle2
+  FileText
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -26,9 +23,10 @@ import {
   Legend
 } from 'recharts';
 import KpiCard from '../components/common/KpiCard';
-
 import { hasPermission } from '../utils/permissions';
 import { useNavigate } from 'react-router-dom';
+import { warehouseApi } from '../services/api';
+import { downloadPdfReport, downloadExcelReport } from '../utils/exportUtils';
 
 export default function Reports({ onNotify, currentUser }) {
   const navigate = useNavigate();
@@ -36,35 +34,66 @@ export default function Reports({ onNotify, currentUser }) {
   const [activeReportTab, setActiveReportTab] = useState('valuation');
   const [selectedHub, setSelectedHub] = useState('All');
   const [dateFilter, setDateFilter] = useState('Quarter to Date');
+  const [warehouses, setWarehouses] = useState([]);
+  const [exporting, setExporting] = useState(false);
 
-  // Inline chart/report data (replace with API calls when analytics endpoints are ready)
+  useEffect(() => {
+    warehouseApi.getAll()
+      .then(res => {
+        if (res?.data && Array.isArray(res.data)) {
+          setWarehouses(res.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Valuation Trend Dataset
   const DASHBOARD_TREND_DATA = [
+    { month: 'Apr', purchase: 62000, sales: 84000, inventoryValue: 142 },
+    { month: 'May', purchase: 74000, sales: 91000, inventoryValue: 148 },
+    { month: 'Jun', purchase: 58000, sales: 88000, inventoryValue: 139 },
+    { month: 'Jul', purchase: 91000, sales: 112000, inventoryValue: 155 },
+    { month: 'Aug', purchase: 68000, sales: 97000, inventoryValue: 146 },
+    { month: 'Sep', purchase: 82000, sales: 124000, inventoryValue: 162 },
+  ];
+
+  // Stock Aging Dataset
+  const STOCK_AGING_DATA = [
+    { range: '0–30 Days', tier: '0–30 Days', count: 142, value: 62400, percentage: 48, risk: 'Low (Fresh Stock)', color: 'var(--color-success-500)' },
+    { range: '31–60 Days', tier: '31–60 Days', count: 88, value: 38200, percentage: 29, risk: 'Moderate (Active Rotation)', color: 'var(--color-primary-500)' },
+    { range: '61–90 Days', tier: '61–90 Days', count: 45, value: 19800, percentage: 15, risk: 'Elevated (Review)', color: 'var(--color-warning-500)' },
+    { range: '90+ Days', tier: '90+ Days', count: 22, value: 9800, percentage: 8, risk: 'Critical (Liquidation Needed)', color: 'var(--color-danger-500)' },
+  ];
+
+  // Top Moving Products
+  const TOP_MOVING_PRODUCTS = [
+    { rank: 1, name: 'Industrial Torque Sensor TS-90', sku: 'SEN-TRQ-90', volume: 142, revenue: 49558, velocity: 'High Velocity' },
+    { rank: 2, name: 'Precision Stepper Motor 24V', sku: 'MOT-STP-24', volume: 85, revenue: 7607, velocity: 'High Velocity' },
+    { rank: 3, name: 'Industrial Ethernet Switch', sku: 'NET-SWT-08', volume: 195, revenue: 53625, velocity: 'Top Mover' },
+    { rank: 4, name: 'Brushless DC Servo Drive 48V', sku: 'DRV-BLDC-48', volume: 110, revenue: 47300, velocity: 'High Velocity' },
+    { rank: 5, name: 'Carbon Steel Round Rods', sku: 'STL-ROD-01', volume: 260, revenue: 11700, velocity: 'Top Volume' },
+  ];
+
+  // Stagnant Inventory Clearance List
+  const STAGNANT_CLEARANCE_ITEMS = [
+    { sku: 'SEN-TRQ-90', name: 'Industrial Torque Sensor TS-90', category: 'Sensors', daysStagnant: 114, units: 45, unitCost: '₹349.00', totalValue: '₹15,705.00', recommendation: 'Promotional Clearance' },
+    { sku: 'MOT-STP-24', name: 'Precision Stepper Motor 24V', category: 'Motors', daysStagnant: 102, units: 28, unitCost: '₹89.50', totalValue: '₹2,506.00', recommendation: 'Vendor Return' },
+    { sku: 'BRG-608-ZZ', name: 'Ball Bearing 608-ZZ', category: 'Mechanical', daysStagnant: 128, units: 180, unitCost: '₹40.00', totalValue: '₹7,200.00', recommendation: 'Bundled Discount' },
+    { sku: 'PLC-CPU-04', name: 'Compact PLC Controller', category: 'Electronics', daysStagnant: 95, units: 6, unitCost: '₹2,100.00', totalValue: '₹12,600.00', recommendation: 'Transfer to Main Hub' },
+    { sku: 'PNE-CYL-50', name: 'Pneumatic Air Cylinder', category: 'Pneumatics', daysStagnant: 108, units: 14, unitCost: '₹350.00', totalValue: '₹4,900.00', recommendation: 'Promotional Clearance' },
+    { sku: 'HYD-VAL-02', name: 'Hydraulic Proportional Valve', category: 'Hydraulics', daysStagnant: 119, units: 5, unitCost: '₹2,850.00', totalValue: '₹14,250.00', recommendation: 'Vendor Return' },
+    { sku: 'CBL-SHD-100', name: 'Shielded Industrial Cable 100m', category: 'Cables', daysStagnant: 134, units: 8, unitCost: '₹800.00', totalValue: '₹6,400.00', recommendation: 'Maintenance Use' },
+    { sku: 'OPT-ENC-10', name: 'Optical Encoder Module', category: 'Sensors', daysStagnant: 98, units: 12, unitCost: '₹953.25', totalValue: '₹11,439.00', recommendation: 'Bundled Discount' },
+  ];
+
+  const procurementVsSalesData = [
     { month: 'Apr', purchase: 62000, sales: 84000 },
     { month: 'May', purchase: 74000, sales: 91000 },
     { month: 'Jun', purchase: 58000, sales: 88000 },
     { month: 'Jul', purchase: 91000, sales: 112000 },
     { month: 'Aug', purchase: 68000, sales: 97000 },
-    { month: 'Sep', purchase: 82000, sales: 124000 },
+    { month: 'Sep', purchase: 82000, sales: 124000 }
   ];
-
-  const STOCK_AGING_DATA = [
-    { tier: '0–30 Days', count: 142, value: 62400, color: '#22c55e' },
-    { tier: '31–60 Days', count: 88, value: 38200, color: '#f59e0b' },
-    { tier: '61–90 Days', count: 45, value: 19800, color: '#f97316' },
-    { tier: '90+ Days', count: 22, value: 9800, color: '#ef4444' },
-  ];
-
-  const TOP_MOVING_PRODUCTS = [
-    { name: 'Industrial Torque Sensor TS-90', sku: 'SEN-TRQ-90', moved: 142, value: 349 },
-    { name: 'Precision Stepper Motor 24V', sku: 'MOT-STP-24', moved: 85, value: 89.5 },
-    { name: 'Industrial Ethernet Switch', sku: 'NET-SWT-08', moved: 195, value: 275 },
-    { name: 'Brushless DC Servo Drive 48V', sku: 'DRV-BLDC-48', moved: 110, value: 430 },
-    { name: 'Carbon Steel Round Rods', sku: 'STL-ROD-01', moved: 260, value: 45 },
-  ];
-
-  const INITIAL_WAREHOUSES = [];
-  const INITIAL_CATEGORIES = [];
-
 
   if (!canViewReports) {
     return (
@@ -88,17 +117,278 @@ export default function Reports({ onNotify, currentUser }) {
     );
   }
 
-  const procurementVsSalesData = [
-    { month: 'Apr', purchase: 62000, sales: 84000 },
-    { month: 'May', purchase: 74000, sales: 91000 },
-    { month: 'Jun', purchase: 58000, sales: 88000 },
-    { month: 'Jul', purchase: 91000, sales: 112000 },
-    { month: 'Aug', purchase: 68000, sales: 97000 },
-    { month: 'Sep', purchase: 82000, sales: 124000 }
-  ];
+  // Handle PDF Export
+  const handleExportPdf = async () => {
+    setExporting(true);
+    const dateStr = new Date().toISOString().slice(0, 10);
 
-  const handleExportReport = () => {
-    onNotify('Report Generated', `Exported ${activeReportTab.toUpperCase()} analysis to CSV.`, 'success');
+    try {
+      if (activeReportTab === 'valuation') {
+        await downloadPdfReport({
+          title: 'StockSense — Stock Valuation & Inventory Turnover',
+          subtitle: `Scope: ${selectedHub} | Period: ${dateFilter} | Currency: INR (₹)`,
+          columns: [
+            { header: 'Fiscal Month', accessor: 'month' },
+            { header: 'Procurement (₹)', accessor: 'purchase' },
+            { header: 'Sales Dispatched (₹)', accessor: 'sales' },
+            { header: 'Valuation Balance (₹)', accessor: 'inventoryValue' },
+            { header: 'Turnover Ratio', accessor: 'turnover' }
+          ],
+          data: DASHBOARD_TREND_DATA.map(d => ({
+            month: `${d.month} 2026`,
+            purchase: `₹${d.purchase.toLocaleString()}`,
+            sales: `₹${d.sales.toLocaleString()}`,
+            inventoryValue: `₹${(d.inventoryValue * 1000).toLocaleString()}`,
+            turnover: '5.4x'
+          })),
+          summaryCards: [
+            { title: 'Total Asset Valuation', value: '₹1,440,000' },
+            { title: 'Inventory Turnover', value: '5.4x' },
+            { title: 'Days Sales of Inv.', value: '67.5 Days' },
+            { title: 'Carrying Cost', value: '₹216,000' }
+          ],
+          filename: `StockSense_Stock_Valuation_${dateStr}.pdf`,
+          apiType: 'valuation'
+        });
+        onNotify?.('PDF Exported', 'Stock Valuation & Turnover report downloaded as PDF.', 'success');
+      } else if (activeReportTab === 'aging') {
+        await downloadPdfReport({
+          title: 'StockSense — Inventory Aging & Depreciation Risk',
+          subtitle: `Scope: ${selectedHub} | Period: ${dateFilter} | Tracked Items: 297`,
+          columns: [
+            { header: 'Aging Bracket', accessor: 'range' },
+            { header: 'Line Items', accessor: 'count' },
+            { header: 'Locked Value', accessor: 'value' },
+            { header: 'Portfolio Share', accessor: 'percentage' },
+            { header: 'Risk Assessment', accessor: 'risk' }
+          ],
+          data: STOCK_AGING_DATA.map(t => ({
+            range: t.range,
+            count: `${t.count} items`,
+            value: `₹${t.value.toLocaleString()}`,
+            percentage: `${t.percentage}%`,
+            risk: t.risk
+          })),
+          summaryCards: [
+            { title: 'Active Inventory Value', value: '₹130,200' },
+            { title: 'Tracked Items', value: '297 Items' },
+            { title: 'Stagnant Flag (>90d)', value: '₹75,000' }
+          ],
+          filename: `StockSense_Inventory_Aging_${dateStr}.pdf`,
+          apiType: 'aging'
+        });
+        onNotify?.('PDF Exported', 'Inventory Aging & Depreciation report downloaded as PDF.', 'success');
+      } else if (activeReportTab === 'trends') {
+        await downloadPdfReport({
+          title: 'StockSense — Procurement Spend vs Sales Revenue Trends',
+          subtitle: `Scope: ${selectedHub} | Period: ${dateFilter} | Net Variance Analysis`,
+          columns: [
+            { header: 'Fiscal Month', accessor: 'month' },
+            { header: 'Inbound Procurement', accessor: 'purchase' },
+            { header: 'Outbound Sales', accessor: 'sales' },
+            { header: 'Net Cash Spread', accessor: 'variance' },
+            { header: 'Gross Margin %', accessor: 'margin' }
+          ],
+          data: procurementVsSalesData.map(d => ({
+            month: `${d.month} 2026`,
+            purchase: `₹${d.purchase.toLocaleString()}`,
+            sales: `₹${d.sales.toLocaleString()}`,
+            variance: `+₹${(d.sales - d.purchase).toLocaleString()}`,
+            margin: `${(((d.sales - d.purchase) / d.sales) * 100).toFixed(1)}%`
+          })),
+          summaryCards: [
+            { title: 'Total Inbound Spend', value: '₹435,000' },
+            { title: 'Total Outbound Sales', value: '₹596,000' },
+            { title: 'Gross Cash Spread', value: '+₹161,000' }
+          ],
+          filename: `StockSense_Trends_Report_${dateStr}.pdf`,
+          apiType: 'trends'
+        });
+        onNotify?.('PDF Exported', 'Procurement vs Sales Trends report downloaded as PDF.', 'success');
+      } else if (activeReportTab === 'velocity') {
+        await downloadPdfReport({
+          title: 'StockSense — Fast-Moving Velocity Ranking',
+          subtitle: `Scope: ${selectedHub} | Trailing 30 Days Top Moving SKUs`,
+          columns: [
+            { header: 'Rank', accessor: 'rank' },
+            { header: 'SKU Code', accessor: 'sku' },
+            { header: 'Product Description', accessor: 'name' },
+            { header: '30d Outbound Volume', accessor: 'volume' },
+            { header: 'Gross Revenue Generated', accessor: 'revenue' },
+            { header: 'Velocity Classification', accessor: 'velocity' }
+          ],
+          data: TOP_MOVING_PRODUCTS.map(p => ({
+            rank: `#${p.rank}`,
+            sku: p.sku,
+            name: p.name,
+            volume: `${p.volume} units`,
+            revenue: `₹${p.revenue.toLocaleString()}`,
+            velocity: p.velocity
+          })),
+          summaryCards: [
+            { title: 'Rank #1 Product', value: 'SEN-TRQ-90' },
+            { title: 'Top Mover Units', value: '260 units' },
+            { title: 'Top Mover Revenue', value: '₹53,625' }
+          ],
+          filename: `StockSense_Velocity_Ranking_${dateStr}.pdf`,
+          apiType: 'velocity'
+        });
+        onNotify?.('PDF Exported', 'Fast-Moving Product Velocity report downloaded as PDF.', 'success');
+      }
+    } catch (err) {
+      onNotify?.('Export Error', err.message || 'Failed to export PDF report.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Handle Excel (.xlsx) Export
+  const handleExportExcel = async () => {
+    setExporting(true);
+    const dateStr = new Date().toISOString().slice(0, 10);
+
+    try {
+      if (activeReportTab === 'valuation') {
+        await downloadExcelReport({
+          title: 'StockSense — Stock Valuation & Inventory Turnover',
+          sheetName: 'Stock Valuation',
+          columns: [
+            { header: 'Fiscal Month', accessor: 'month' },
+            { header: 'Procurement (INR)', accessor: 'purchase' },
+            { header: 'Sales (INR)', accessor: 'sales' },
+            { header: 'Net Valuation (INR)', accessor: 'inventoryValue' },
+            { header: 'Turnover Ratio', accessor: 'turnover' }
+          ],
+          data: DASHBOARD_TREND_DATA.map(d => ({
+            month: `${d.month} 2026`,
+            purchase: d.purchase,
+            sales: d.sales,
+            inventoryValue: d.inventoryValue * 1000,
+            turnover: '5.4x'
+          })),
+          filename: `StockSense_Stock_Valuation_${dateStr}.xlsx`,
+          apiType: 'valuation'
+        });
+        onNotify?.('Excel Exported', 'Stock Valuation & Turnover report downloaded as Excel (.xlsx).', 'success');
+      } else if (activeReportTab === 'aging') {
+        await downloadExcelReport({
+          title: 'StockSense — Inventory Aging & Depreciation Risk',
+          sheetName: 'Stock Aging',
+          columns: [
+            { header: 'Aging Tier', accessor: 'range' },
+            { header: 'Line Items Count', accessor: 'count' },
+            { header: 'Locked Value (INR)', accessor: 'value' },
+            { header: 'Portfolio Percentage', accessor: 'percentage' },
+            { header: 'Risk Status', accessor: 'risk' }
+          ],
+          data: STOCK_AGING_DATA.map(t => ({
+            range: t.range,
+            count: t.count,
+            value: t.value,
+            percentage: `${t.percentage}%`,
+            risk: t.risk
+          })),
+          filename: `StockSense_Inventory_Aging_${dateStr}.xlsx`,
+          apiType: 'aging'
+        });
+        onNotify?.('Excel Exported', 'Inventory Aging & Depreciation report downloaded as Excel (.xlsx).', 'success');
+      } else if (activeReportTab === 'trends') {
+        await downloadExcelReport({
+          title: 'StockSense — Procurement vs Sales Revenue Trends',
+          sheetName: 'Procurement vs Sales',
+          columns: [
+            { header: 'Fiscal Month', accessor: 'month' },
+            { header: 'Inbound Procurement (INR)', accessor: 'purchase' },
+            { header: 'Outbound Sales (INR)', accessor: 'sales' },
+            { header: 'Net Cash Spread (INR)', accessor: 'variance' },
+            { header: 'Gross Margin Ratio', accessor: 'margin' }
+          ],
+          data: procurementVsSalesData.map(d => ({
+            month: `${d.month} 2026`,
+            purchase: d.purchase,
+            sales: d.sales,
+            variance: d.sales - d.purchase,
+            margin: `${(((d.sales - d.purchase) / d.sales) * 100).toFixed(1)}%`
+          })),
+          filename: `StockSense_Trends_Report_${dateStr}.xlsx`,
+          apiType: 'trends'
+        });
+        onNotify?.('Excel Exported', 'Procurement vs Sales Trends downloaded as Excel (.xlsx).', 'success');
+      } else if (activeReportTab === 'velocity') {
+        await downloadExcelReport({
+          title: 'StockSense — Fast-Moving Velocity Ranking',
+          sheetName: 'Product Velocity',
+          columns: [
+            { header: 'Rank', accessor: 'rank' },
+            { header: 'SKU Code', accessor: 'sku' },
+            { header: 'Product Description', accessor: 'name' },
+            { header: 'Units Sold (30d)', accessor: 'volume' },
+            { header: 'Gross Revenue (INR)', accessor: 'revenue' },
+            { header: 'Velocity Classification', accessor: 'velocity' }
+          ],
+          data: TOP_MOVING_PRODUCTS.map(p => ({
+            rank: p.rank,
+            sku: p.sku,
+            name: p.name,
+            volume: p.volume,
+            revenue: p.revenue,
+            velocity: p.velocity
+          })),
+          filename: `StockSense_Velocity_Ranking_${dateStr}.xlsx`,
+          apiType: 'velocity'
+        });
+        onNotify?.('Excel Exported', 'Fast-Moving Product Velocity downloaded as Excel (.xlsx).', 'success');
+      }
+    } catch (err) {
+      onNotify?.('Export Error', err.message || 'Failed to export Excel report.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Export Stagnant Clearance List
+  const handleExportClearancePdf = async () => {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    await downloadPdfReport({
+      title: 'StockSense — Stagnant Inventory Clearance Action List',
+      subtitle: '12 SKUs with zero movement in >90 days (Valuation: ₹75,000)',
+      columns: [
+        { header: 'SKU', accessor: 'sku' },
+        { header: 'Product Name', accessor: 'name' },
+        { header: 'Category', accessor: 'category' },
+        { header: 'Days Idle', accessor: 'daysStagnant' },
+        { header: 'Units', accessor: 'units' },
+        { header: 'Unit Cost', accessor: 'unitCost' },
+        { header: 'Total Value', accessor: 'totalValue' },
+        { header: 'Recommendation', accessor: 'recommendation' }
+      ],
+      data: STAGNANT_CLEARANCE_ITEMS,
+      filename: `StockSense_Clearance_List_${dateStr}.pdf`,
+      apiType: 'clearance'
+    });
+    onNotify?.('Clearance Dossier', '12 stagnant items exported to PDF successfully.', 'success');
+  };
+
+  const handleExportClearanceExcel = async () => {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    await downloadExcelReport({
+      title: 'StockSense — Stagnant Inventory Clearance Action List',
+      sheetName: 'Clearance SKUs',
+      columns: [
+        { header: 'SKU', accessor: 'sku' },
+        { header: 'Product Name', accessor: 'name' },
+        { header: 'Category', accessor: 'category' },
+        { header: 'Days Idle', accessor: 'daysStagnant' },
+        { header: 'Units', accessor: 'units' },
+        { header: 'Unit Cost', accessor: 'unitCost' },
+        { header: 'Total Value', accessor: 'totalValue' },
+        { header: 'Action Recommendation', accessor: 'recommendation' }
+      ],
+      data: STAGNANT_CLEARANCE_ITEMS,
+      filename: `StockSense_Clearance_List_${dateStr}.xlsx`,
+      apiType: 'clearance'
+    });
+    onNotify?.('Clearance Dossier', '12 stagnant items exported to Excel (.xlsx) successfully.', 'success');
   };
 
   return (
@@ -117,14 +407,27 @@ export default function Reports({ onNotify, currentUser }) {
           </p>
         </div>
 
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={handleExportPdf}
+            disabled={exporting}
+            title="Download executive report in PDF format"
+          >
+            <FileText size={15} />
+            <span>Export PDF</span>
+          </button>
+
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            onClick={handleExportReport}
+            onClick={handleExportExcel}
+            disabled={exporting}
+            title="Download report data in Excel (.xlsx) format"
           >
-            <Download size={15} />
-            <span>Export Report Data</span>
+            <FileSpreadsheet size={15} />
+            <span>Export Excel</span>
           </button>
         </div>
       </div>
@@ -157,7 +460,7 @@ export default function Reports({ onNotify, currentUser }) {
                 onChange={(e) => setSelectedHub(e.target.value)}
               >
                 <option value="All">All Facilities (Consolidated)</option>
-                {INITIAL_WAREHOUSES.map(w => (
+                {warehouses.map(w => (
                   <option key={w.id} value={w.name}>{w.name}</option>
                 ))}
               </select>
@@ -304,7 +607,7 @@ export default function Reports({ onNotify, currentUser }) {
                       />
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>
-                      {tier.count} line items tracked in this age bracket
+                      {tier.count} line items tracked in this age bracket • {tier.risk}
                     </div>
                   </div>
                 ))}
@@ -322,13 +625,26 @@ export default function Reports({ onNotify, currentUser }) {
                 <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)', maxWidth: '360px', margin: '8px auto 20px' }}>
                   12 SKUs haven't registered outbound sales movements in over 90 days. Recommended for vendor return or promotional clearance.
                 </p>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => onNotify('Clearance List', 'Exported 12 stagnant items to CSV.', 'info')}
-                >
-                  Generate Clearance List
-                </button>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleExportClearancePdf}
+                    title="Export 12 stagnant items as PDF"
+                  >
+                    <FileText size={14} />
+                    <span>Download Clearance PDF</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleExportClearanceExcel}
+                    title="Export 12 stagnant items as Excel"
+                  >
+                    <FileSpreadsheet size={14} />
+                    <span>Download Clearance Excel</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -375,6 +691,7 @@ export default function Reports({ onNotify, currentUser }) {
               <tr>
                 <th>Rank</th>
                 <th>Product Description</th>
+                <th>SKU</th>
                 <th>Units Sold (30d)</th>
                 <th>Gross Revenue</th>
                 <th>Velocity Status</th>
@@ -383,12 +700,13 @@ export default function Reports({ onNotify, currentUser }) {
             <tbody>
               {TOP_MOVING_PRODUCTS.map((item, idx) => (
                 <tr key={idx}>
-                  <td style={{ fontWeight: 800, color: 'var(--color-primary-600)' }}>#{idx + 1}</td>
+                  <td style={{ fontWeight: 800, color: 'var(--color-primary-600)' }}>#{item.rank}</td>
                   <td className="font-semibold">{item.name}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--color-neutral-500)' }}>{item.sku}</td>
                   <td style={{ fontWeight: 700 }}>{item.volume} units</td>
                   <td style={{ fontWeight: 700, color: 'var(--color-primary-700)' }}>₹{item.revenue.toLocaleString()}</td>
                   <td>
-                    <span className="badge badge-primary">High Velocity</span>
+                    <span className="badge badge-primary">{item.velocity}</span>
                   </td>
                 </tr>
               ))}
