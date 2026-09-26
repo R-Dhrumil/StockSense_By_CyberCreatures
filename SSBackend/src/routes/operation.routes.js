@@ -15,6 +15,17 @@ import {
   validateDelivery,
   cancelDelivery,
 
+  // Operation 3: Internal Transfers (Inter-Rack / Inter-Hub)
+  getTransfers,
+  getTransferById,
+  createTransfer,
+  validateTransfer,
+  cancelTransfer,
+
+  // Operation 4: Stock Adjustments (Physical Cycle Counts)
+  getAdjustments,
+  createAdjustment,
+
   // Audit Ledger
   getStockLedger,
 } from '../controllers/operation.controller.js';
@@ -63,6 +74,35 @@ router.post('/deliveries/:id/validate', validateDelivery);
 router.post('/deliveries/:id/cancel', cancelDelivery);
 
 // =============================================================================
+// OPERATION 3: INTERNAL TRANSFERS (Inter-Rack / Inter-Hub)
+// =============================================================================
+
+// GET /api/v1/operations/transfers — List internal transfers
+router.get('/transfers', getTransfers);
+
+// POST /api/v1/operations/transfers — Create internal transfer
+router.post('/transfers', createTransfer);
+
+// GET /api/v1/operations/transfers/:id — Single transfer details
+router.get('/transfers/:id', getTransferById);
+
+// POST /api/v1/operations/transfers/:id/validate — Validate internal transfer & update location stock
+router.post('/transfers/:id/validate', validateTransfer);
+
+// POST /api/v1/operations/transfers/:id/cancel — Cancel internal transfer
+router.post('/transfers/:id/cancel', cancelTransfer);
+
+// =============================================================================
+// OPERATION 4: STOCK ADJUSTMENTS (Physical Counts)
+// =============================================================================
+
+// GET /api/v1/operations/adjustments — List stock adjustments history
+router.get('/adjustments', getAdjustments);
+
+// POST /api/v1/operations/adjustments — Submit physical inventory count adjustment
+router.post('/adjustments', createAdjustment);
+
+// =============================================================================
 // AUDIT LEDGER
 // =============================================================================
 
@@ -70,3 +110,4 @@ router.post('/deliveries/:id/cancel', cancelDelivery);
 router.get('/ledger', getStockLedger);
 
 export default router;
+

@@ -1,9 +1,12 @@
 import { Receipt } from '../models/receipt.model.js';
 import { Delivery } from '../models/delivery.model.js';
+import { Transfer } from '../models/transfer.model.js';
+import { Adjustment } from '../models/adjustment.model.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { broadcastEvent } from '../services/socket.service.js';
+
 
 /**
  * GET /api/v1/operations/receipts
@@ -382,6 +385,272 @@ export const cancelDelivery = catchAsync(async (req, res) => {
 });
 
 // =============================================================================
+// OPERATION 3: INTERNAL TRANSFERS (Inter-Rack / Inter-Hub Stock Movements)
+// =============================================================================
+
+/**
+ * GET /api/v1/operations/transfers
+ * List all internal transfers
+ */
+export const getTransfers = catchAsync(async (req, res) => {
+  const { status, search, limit = 50, page = 1 } = req.query;
+  const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+
+  const transfers = await Transfer.findAll({
+    status,
+    search,
+    limit: parseInt(limit, 10),
+    offset
+  });
+
+  return ApiResponse.send(
+    res,
+    200,
+    {
+      count: transfers.length,
+      transfers
+    },
+    'Internal transfers retrieved successfully'
+  );
+});
+
+/**
+ * GET /api/v1/operations/transfers/:id
+ * Get single transfer with items
+ */
+export const getTransferById = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  const transfer = await Transfer.findById(id);
+  if (!transfer) {
+    throw new ApiError(404, 'Transfer operation not found');
+  }
+
+  return ApiResponse.send(
+    res,
+    200,
+    { transfer },
+    'Transfer details retrieved successfully'
+  );
+});
+
+/**
+ * POST /api/v1/operations/transfers
+ * Create an internal transfer
+ */
+export const createTransfer = catchAsync(async (req, res) => {
+  const {
+    source_location_id,
+    sourceLocationId,
+    dest_location_id,
+    destLocationId,
+    product_id,
+    productId,
+    quantity,
+    demanded_qty,
+    demandedQty,
+    reference_note,
+    referenceNote,
+    notes,
+    warehouse_id,
+    warehouseId,
+    items
+  } = req.body;
+
+  const srcLoc = source_location_id || sourceLocationId;
+  const dstLoc = dest_location_id || destLocationId;
+
+  if (srcLoc && dstLoc && srcLoc === dstLoc) {
+    throw new ApiError(400, 'Source and destination locations cannot be identical');
+  }
+
+  const transfer = await Transfer.create({
+    sourceLocationId: srcLoc,
+    destLocationId: dstLoc,
+    productId: product_id || productId,
+    demandedQty: demanded_qty || demandedQty || quantity || 1,
+    notes: reference_note || referenceNote || notes,
+    referenceNote: reference_note || referenceNote || notes,
+    warehouseId: warehouse_id || warehouseId,
+    userId: req.user?.id,
+    items
+  });
+
+  try {
+    broadcastEvent('transfer:created', {
+      id: transfer.id,
+      operationNumber: transfer.operationNumber || transfer.operation_number,
+      status: transfer.status,
+      timestamp: new Date()
+    });
+  } catch (e) {}
+
+  return ApiResponse.send(
+    res,
+    201,
+    { transfer },
+    `Internal transfer ${transfer.operationNumber || transfer.operation_number || transfer.id} created successfully`
+  );
+});
+
+/**
+ * POST /api/v1/operations/transfers/:id/validate
+ * Atomic SQL transaction: Decrement source location stock, increment destination location stock, log ledger
+ */
+export const validateTransfer = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  const validated = await Transfer.validate(id, req.user?.id);
+
+  try {
+    broadcastEvent('stock:updated', {
+      operationId: validated.id,
+      operationNumber: validated.operationNumber || validated.operation_number,
+      type: 'INTERNAL',
+      sourceLocationId: validated.sourceLocationId || validated.source_location_id,
+      destLocationId: validated.destLocationId || validated.dest_location_id,
+      timestamp: new Date()
+    });
+
+    broadcastEvent('transfer:validated', {
+      transfer: validated,
+      timestamp: new Date()
+    });
+  } catch (e) {}
+
+  return ApiResponse.send(
+    res,
+    200,
+    { transfer: validated },
+    `Transfer ${validated.operationNumber || validated.operation_number || id} validated successfully. Inter-location inventory balances updated.`
+  );
+});
+
+/**
+ * POST /api/v1/operations/transfers/:id/cancel
+ * Cancel transfer
+ */
+export const cancelTransfer = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  const canceled = await Transfer.cancel(id);
+
+  try {
+    broadcastEvent('transfer:canceled', {
+      transfer: canceled,
+      timestamp: new Date()
+    });
+  } catch (e) {}
+
+  return ApiResponse.send(
+    res,
+    200,
+    { transfer: canceled },
+    `Transfer ${canceled.operationNumber || canceled.operation_number || id} canceled.`
+  );
+});
+
+// =============================================================================
+// OPERATION 4: STOCK ADJUSTMENTS (Physical Cycle Counts & Discrepancies)
+// =============================================================================
+
+/**
+ * GET /api/v1/operations/adjustments
+ * List physical inventory count adjustments
+ */
+export const getAdjustments = catchAsync(async (req, res) => {
+  const { search, limit = 50, page = 1 } = req.query;
+  const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+
+  const adjustments = await Adjustment.findAll({
+    search,
+    limit: parseInt(limit, 10),
+    offset
+  });
+
+  return ApiResponse.send(
+    res,
+    200,
+    {
+      count: adjustments.length,
+      adjustments
+    },
+    'Stock adjustments retrieved successfully'
+  );
+});
+
+/**
+ * POST /api/v1/operations/adjustments
+ * Submit physical inventory count adjustment
+ */
+export const createAdjustment = catchAsync(async (req, res) => {
+  const {
+    product_id,
+    productId,
+    location_id,
+    locationId,
+    warehouse_id,
+    warehouseId,
+    counted_qty,
+    countedQty,
+    physical_qty,
+    physicalQty,
+    quantity,
+    mode,
+    reason,
+    notes,
+    reference
+  } = req.body;
+
+  const targetProduct = product_id || productId;
+  if (!targetProduct) {
+    throw new ApiError(400, 'Product ID is required for stock adjustment');
+  }
+
+  const targetReason = reason || notes;
+  if (!targetReason) {
+    throw new ApiError(400, 'A mandatory reason must be provided for audit tracking');
+  }
+
+  const adjustment = await Adjustment.create({
+    productId: targetProduct,
+    locationId: location_id || locationId,
+    warehouseId: warehouse_id || warehouseId,
+    countedQty: counted_qty !== undefined ? counted_qty : countedQty,
+    physicalQty: physical_qty !== undefined ? physical_qty : physicalQty,
+    quantity,
+    mode: mode || 'exact',
+    reason: targetReason,
+    notes: targetReason,
+    reference,
+    userId: req.user?.id
+  });
+
+  try {
+    broadcastEvent('stock:updated', {
+      operationId: adjustment.id,
+      operationNumber: adjustment.operationNumber || adjustment.operation_number,
+      type: 'ADJUSTMENT',
+      productId: targetProduct,
+      delta: adjustment.delta,
+      timestamp: new Date()
+    });
+
+    broadcastEvent('adjustment:created', {
+      adjustment,
+      timestamp: new Date()
+    });
+  } catch (e) {}
+
+  return ApiResponse.send(
+    res,
+    201,
+    { adjustment },
+    `Stock adjustment ${adjustment.operationNumber || adjustment.operation_number || adjustment.id} applied successfully. Delta: ${adjustment.delta > 0 ? `+${adjustment.delta}` : adjustment.delta} units logged to Stock Ledger.`
+  );
+});
+
+// =============================================================================
 // AUDIT LEDGER
 // =============================================================================
 
@@ -408,3 +677,4 @@ export const getStockLedger = catchAsync(async (req, res) => {
     'Stock ledger retrieved successfully'
   );
 });
+

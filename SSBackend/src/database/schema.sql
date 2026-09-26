@@ -166,15 +166,40 @@ CREATE INDEX IF NOT EXISTS idx_operation_items_product_id ON operation_items(pro
 CREATE TABLE IF NOT EXISTS stock_ledger (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  source_location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  dest_location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  operation_id UUID REFERENCES operations(id) ON DELETE SET NULL,
   quantity_change INT NOT NULL,
-  move_type VARCHAR(50) NOT NULL CHECK (move_type IN ('RECEIPT', 'DELIVERY', 'INTERNAL', 'ADJUSTMENT')),
-  reference_number VARCHAR(100) NOT NULL,
+  balance_after INT DEFAULT 0,
+  move_type VARCHAR(50) DEFAULT 'INTERNAL',
+  reference_number VARCHAR(100),
+  reference VARCHAR(100),
   notes TEXT,
+  reason TEXT,
   created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_stock_ledger_product_id ON stock_ledger(product_id);
 CREATE INDEX IF NOT EXISTS idx_stock_ledger_location_id ON stock_ledger(location_id);
 CREATE INDEX IF NOT EXISTS idx_stock_ledger_ref ON stock_ledger(reference_number);
+
+-- Operations & Ledger Backward Compatibility Columns
+ALTER TABLE operations ADD COLUMN IF NOT EXISTS shipping_carrier VARCHAR(100);
+ALTER TABLE operations ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(100);
+ALTER TABLE operations ADD COLUMN IF NOT EXISTS total_amount NUMERIC(15, 2) DEFAULT 0.00;
+ALTER TABLE operations ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE operations ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE operations ADD COLUMN IF NOT EXISTS source_location_id UUID REFERENCES locations(id) ON DELETE SET NULL;
+ALTER TABLE operations ADD COLUMN IF NOT EXISTS dest_location_id UUID REFERENCES locations(id) ON DELETE SET NULL;
+
+ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS source_location_id UUID REFERENCES locations(id) ON DELETE SET NULL;
+ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS dest_location_id UUID REFERENCES locations(id) ON DELETE SET NULL;
+ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS operation_id UUID REFERENCES operations(id) ON DELETE SET NULL;
+ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS balance_after INT DEFAULT 0;
+ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS reference VARCHAR(100);
+ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS reason TEXT;
+ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+
