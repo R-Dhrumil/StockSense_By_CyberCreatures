@@ -150,6 +150,7 @@ html {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
@@ -160,6 +161,7 @@ body {
   color: var(--color-neutral-800);
   background-color: var(--color-neutral-50);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 #root {

@@ -14,12 +14,11 @@ import {
   Users,
   Settings,
   ChevronLeft,
-  ChevronRight,
-  Shield
+  ChevronRight
 } from 'lucide-react';
 import logoDarkSvg from '../../assets/logo-dark.svg';
 import faviconSvg from '../../assets/fevicon.svg';
-import { normalizeRole, ROLE_LABELS } from '../../utils/permissions';
+import { normalizeRole } from '../../utils/permissions';
 
 const ALL_NAV_GROUPS = [
   {
@@ -152,31 +151,6 @@ export default function Sidebar({
             </div>
           ))}
         </nav>
-
-        {/* Sidebar Footer with Role Badge */}
-        <div className="sidebar-footer">
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: 'var(--radius-md)',
-            background: currentRole === 'ADMIN' ? 'rgba(59, 130, 246, 0.2)' : (currentRole === 'INVENTORY_MANAGER' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'),
-            color: currentRole === 'ADMIN' ? '#60A5FA' : (currentRole === 'INVENTORY_MANAGER' ? '#FBBF24' : '#34D399'),
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            {currentRole === 'ADMIN' ? <Shield size={16} /> : (currentRole === 'INVENTORY_MANAGER' ? <Package size={16} /> : <Truck size={16} />)}
-          </div>
-          <div className="sidebar-footer-info" style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-neutral-200)', whiteSpace: 'nowrap' }}>
-              {ROLE_LABELS[currentRole] || 'User'}
-            </div>
-            <div style={{ fontSize: '10px', color: 'var(--color-neutral-400)', whiteSpace: 'nowrap' }}>
-              {currentRole === 'ADMIN' ? 'Full System Access' : (currentRole === 'INVENTORY_MANAGER' ? 'Stock & Operations' : 'Transfers & Counting')}
-            </div>
-          </div>
-        </div>
       </aside>
     </>
   );

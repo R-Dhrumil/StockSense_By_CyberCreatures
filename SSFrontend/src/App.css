@@ -105,7 +105,14 @@
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-2) 0;
+  overflow-x: hidden;
+  padding: var(--space-2) 0 var(--space-8);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .sidebar-group {
