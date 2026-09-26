@@ -649,7 +649,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
               onClick={handleOpenCreate}
             >
               <Plus size={16} />
-              <span>+ Create Receipt / PO</span>
+              <span>Create Receipt / PO</span>
             </button>
           ) : (
             <span className="badge badge-neutral" style={{ padding: '6px 12px', fontSize: '12px' }}>

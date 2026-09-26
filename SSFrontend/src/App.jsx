@@ -48,6 +48,8 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [warehouses, setWarehouses] = useState(INITIAL_WAREHOUSES);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [isWarehousesLoading, setIsWarehousesLoading] = useState(true);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,6 +82,7 @@ export default function App() {
     if (isAuthenticated) {
       refreshProductsList();
 
+      setIsWarehousesLoading(true);
       warehouseApi.getWarehouses()
         .then(res => {
           if (res?.data?.warehouses && res.data.warehouses.length > 0) {
@@ -88,7 +91,13 @@ export default function App() {
         })
         .catch(err => {
           console.warn('Initial warehouses fetch in App fallback:', err.message);
+        })
+        .finally(() => {
+          setIsWarehousesLoading(false);
         });
+    } else {
+      setIsProductsLoading(false);
+      setIsWarehousesLoading(false);
     }
   }, [isAuthenticated]);
 
@@ -288,6 +297,7 @@ export default function App() {
                   warehouses={warehouses}
                   onNotify={addToast}
                   currentUser={currentUser}
+                  isLoading={isProductsLoading}
                 />
               }
             />
@@ -306,12 +316,19 @@ export default function App() {
                   activeWarehouse={activeWarehouse}
                   onChangeWarehouse={setActiveWarehouse}
                   currentUser={currentUser}
+                  isLoading={isProductsLoading}
                 />
               }
             />
             <Route
               path="/warehouses"
-              element={<Warehouses onNotify={addToast} currentUser={currentUser} />}
+              element={
+                <Warehouses 
+                  onNotify={addToast} 
+                  currentUser={currentUser} 
+                  isLoading={isWarehousesLoading}
+                />
+              }
             />
             <Route
               path="/suppliers"
