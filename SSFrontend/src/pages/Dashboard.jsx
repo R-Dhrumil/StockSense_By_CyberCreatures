@@ -15,7 +15,8 @@ import {
   Truck,
   Send,
   Boxes,
-  ExternalLink
+  ExternalLink,
+  Zap
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -62,7 +63,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
             <span style={{ color: 'var(--color-neutral-800)', fontWeight: 600 }}>Dashboard</span>
           </div>
           <h1 className="page-title">
-            Welcome back, {currentUser.name.split(' ')[0]} 👋
+            Welcome back, {currentUser.name.split(' ')[0]}
           </h1>
           <p className="page-subtitle">
             Here is your live inventory telemetry, replenishment pipeline, and fulfillment overview.
@@ -160,8 +161,8 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
       {/* Quick Actions Shortcuts */}
       <div className="card mb-6" style={{ padding: 'var(--space-4)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-neutral-700)' }}>
-            ⚡ Operational Quick Shortcuts
+          <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-neutral-700)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Zap size={15} style={{ color: 'var(--color-warning-500)' }} /> Operational Quick Shortcuts
           </span>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)' }}>
             Frequently used tasks

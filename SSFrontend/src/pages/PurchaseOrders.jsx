@@ -619,7 +619,9 @@ export default function PurchaseOrders({ onNotify, products, setProducts }) {
                     </td>
                     <td style={{ fontWeight: 600 }}>{item.qty} units</td>
                     <td>
-                      <span className="badge badge-success">✓ 100% Inspected</span>
+                      <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCircle2 size={12} /> 100% Inspected
+                      </span>
                     </td>
                   </tr>
                 ))}

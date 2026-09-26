@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Boxes,
+  Package,
   RefreshCw,
   Truck,
   ArrowRight,
@@ -153,7 +154,19 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
       accessor: 'name',
       render: (row) => (
         <div className="table-product-cell">
-          <span style={{ fontSize: '20px' }}>{row.image || '📦'}</span>
+          <div style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-neutral-100)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--color-primary-600)',
+            flexShrink: 0
+          }}>
+            <Package size={17} />
+          </div>
           <div>
             <div className="table-product-name">{row.name}</div>
             <div className="table-product-sku">SKU: {row.sku} • {row.category}</div>
@@ -481,9 +494,9 @@ export default function Inventory({ products, setProducts, onNotify, activeWareh
                 value={adjustData.mode}
                 onChange={(e) => setAdjustData({ ...adjustData, mode: e.target.value })}
               >
-                <option value="add">➕ Inbound Increase (+ Add Units)</option>
-                <option value="subtract">➖ Outbound Scrap / Loss (- Deduct Units)</option>
-                <option value="exact">🎯 Set Exact Count (Override to specific Qty)</option>
+                <option value="add">Inbound Increase (+ Add Units)</option>
+                <option value="subtract">Outbound Scrap / Loss (- Deduct Units)</option>
+                <option value="exact">Set Exact Count (Override to specific Qty)</option>
               </select>
             </div>
           </div>

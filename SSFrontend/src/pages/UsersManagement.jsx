@@ -12,7 +12,10 @@ import {
   Edit2,
   Trash2,
   Send,
-  Lock
+  Lock,
+  Package,
+  Truck,
+  Eye
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
@@ -180,10 +183,26 @@ export default function UsersManagement({ onNotify }) {
               <thead>
                 <tr>
                   <th style={{ width: '280px' }}>System Module</th>
-                  <th>👑 Admin</th>
-                  <th>📦 Inventory Manager</th>
-                  <th>🚚 Warehouse Staff</th>
-                  <th>👁️ Viewer</th>
+                  <th>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Shield size={14} style={{ color: 'var(--color-primary-500)' }} /> Admin
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Package size={14} style={{ color: 'var(--color-warning-500)' }} /> Inventory Manager
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Truck size={14} style={{ color: 'var(--color-success-500)' }} /> Warehouse Staff
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Eye size={14} style={{ color: 'var(--color-neutral-400)' }} /> Viewer
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

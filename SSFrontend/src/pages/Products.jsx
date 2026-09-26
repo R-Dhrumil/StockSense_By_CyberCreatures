@@ -16,13 +16,45 @@ import {
   DollarSign,
   Boxes,
   Sliders,
-  X
+  X,
+  Zap,
+  Cpu,
+  Layers,
+  Plug,
+  Wrench,
+  Camera
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import Drawer from '../components/common/Drawer';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_WAREHOUSES, INITIAL_SUPPLIERS } from '../data/mockData';
+
+const PRODUCT_ICONS = [
+  { key: 'Package', icon: Package, label: 'General / Package' },
+  { key: 'Zap', icon: Zap, label: 'Sensors & Power' },
+  { key: 'Cpu', icon: Cpu, label: 'Actuators & Motors' },
+  { key: 'Sliders', icon: Sliders, label: 'Controllers' },
+  { key: 'Layers', icon: Layers, label: 'Pneumatics & Fluid' },
+  { key: 'Plug', icon: Plug, label: 'Networking & Cables' },
+  { key: 'Wrench', icon: Wrench, label: 'Fasteners & Hardware' },
+  { key: 'Camera', icon: Camera, label: 'Optics & Vision' }
+];
+
+const renderProductIcon = (iconKey) => {
+  const map = {
+    Zap,
+    Cpu,
+    Sliders,
+    Layers,
+    Plug,
+    Wrench,
+    Camera,
+    Package
+  };
+  const Comp = map[iconKey] || Package;
+  return <Comp size={16} />;
+};
 
 export default function Products({ products, setProducts, onNotify }) {
   const [selectedRows, setSelectedRows] = useState([]);
@@ -50,7 +82,7 @@ export default function Products({ products, setProducts, onNotify }) {
     description: '',
     taxRate: 8.5,
     variationColor: 'Standard',
-    image: '📦'
+    image: 'Package'
   });
 
   // Open Create Drawer
@@ -74,7 +106,7 @@ export default function Products({ products, setProducts, onNotify }) {
       description: '',
       taxRate: 8.5,
       variationColor: 'Standard',
-      image: '📦'
+      image: 'Package'
     });
     setActiveDrawerTab('basic');
     setIsDrawerOpen(true);
@@ -156,8 +188,8 @@ export default function Products({ products, setProducts, onNotify }) {
       accessor: 'name',
       render: (row) => (
         <div className="table-product-cell">
-          <div className="table-product-img">
-            {row.image || '📦'}
+          <div className="table-product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-neutral-100)', color: 'var(--color-primary-600)', borderRadius: 'var(--radius-md)' }}>
+            {renderProductIcon(row.image)}
           </div>
           <div className="table-product-info">
             <div className="table-product-name">{row.name}</div>
@@ -471,17 +503,18 @@ export default function Products({ products, setProducts, onNotify }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Display Emoji / Icon</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {['⚡', '⚙️', '🎯', '🗜️', '🎛️', '📷', '🔌', '🔩', '📦'].map(emo => (
+              <label className="form-label">Display Badge Icon</label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {PRODUCT_ICONS.map(({ key, icon: IconComp, label }) => (
                   <button
-                    key={emo}
+                    key={key}
                     type="button"
-                    className={`btn btn-sm ${formData.image === emo ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ fontSize: '18px', width: '36px', height: '36px', padding: 0 }}
-                    onClick={() => setFormData({ ...formData, image: emo })}
+                    className={`btn btn-sm ${formData.image === key ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={() => setFormData({ ...formData, image: key })}
+                    title={label}
                   >
-                    {emo}
+                    <IconComp size={16} />
                   </button>
                 ))}
               </div>

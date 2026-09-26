@@ -5,11 +5,16 @@ import {
   Mail,
   User,
   ArrowRight,
+  ArrowLeft,
   Warehouse,
   Boxes,
   CheckCircle2,
   AlertCircle,
-  KeyRound
+  KeyRound,
+  Shield,
+  Package,
+  Truck,
+  X
 } from 'lucide-react';
 import logoDarkSvg from '../assets/logo.svg';
 import faviconSvg from '../assets/fevicon.svg';
@@ -488,27 +493,27 @@ export default function Login({ onLoginSuccess }) {
               className="btn btn-secondary btn-sm"
               onClick={() => handleAutofillCredentials('ADMIN')}
               title="Pre-fills credentials for Admin role"
-              style={{ padding: '6px 4px', fontSize: '11px', whiteSpace: 'nowrap' }}
+              style={{ padding: '6px 4px', fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
             >
-              👑 Admin
+              <Shield size={13} style={{ color: 'var(--color-primary-500)' }} /> Admin
             </button>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={() => handleAutofillCredentials('INVENTORY_MANAGER')}
               title="Pre-fills credentials for Inventory Manager role"
-              style={{ padding: '6px 4px', fontSize: '11px', whiteSpace: 'nowrap' }}
+              style={{ padding: '6px 4px', fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
             >
-              📦 Inv. Mgr
+              <Package size={13} style={{ color: 'var(--color-warning-500)' }} /> Inv. Mgr
             </button>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={() => handleAutofillCredentials('STAFF')}
               title="Pre-fills credentials for Warehouse Staff role"
-              style={{ padding: '6px 4px', fontSize: '11px', whiteSpace: 'nowrap' }}
+              style={{ padding: '6px 4px', fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
             >
-              🚚 Staff
+              <Truck size={13} style={{ color: 'var(--color-success-500)' }} /> Staff
             </button>
           </div>
         </div>
@@ -529,7 +534,7 @@ export default function Login({ onLoginSuccess }) {
                 onClick={closeResetModal}
                 aria-label="Close recovery modal"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
@@ -604,9 +609,9 @@ export default function Login({ onLoginSuccess }) {
                       type="button"
                       className="btn btn-ghost btn-sm"
                       onClick={() => setOtpStep(1)}
-                      style={{ fontSize: '12px' }}
+                      style={{ fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
-                      ← Re-enter email
+                      <ArrowLeft size={14} /> Re-enter email
                     </button>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button type="button" className="btn btn-secondary" onClick={closeResetModal}>

@@ -20,7 +20,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'Apex Dynamics Corp',
     description: 'High-precision industrial torque sensor with CAN bus and RS-485 interfaces.',
-    image: '⚡'
+    image: 'Zap'
   },
   {
     id: 'PRD-1002',
@@ -38,7 +38,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'Apex Dynamics Corp',
     description: 'NEMA 23 bipolar stepper motor with 1.8 degree step angle and 1.26 Nm holding torque.',
-    image: '⚙️'
+    image: 'Cpu'
   },
   {
     id: 'PRD-1003',
@@ -56,7 +56,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'LuminoTech Precision',
     description: 'Class II optical laser rangefinder with ±1mm accuracy over 50m distance.',
-    image: '🎯'
+    image: 'Camera'
   },
   {
     id: 'PRD-1004',
@@ -74,7 +74,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'Vortex Flow Systems',
     description: 'ISO 15552 standard pneumatic cylinder with adjustable end-position cushioning.',
-    image: '🗜️'
+    image: 'Layers'
   },
   {
     id: 'PRD-1005',
@@ -92,7 +92,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'ElectroCore Global',
     description: 'Modular PLC with 16 digital inputs, 16 relay outputs, Ethernet/IP and Modbus TCP.',
-    image: '🎛️'
+    image: 'Sliders'
   },
   {
     id: 'PRD-1006',
@@ -110,7 +110,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'LuminoTech Precision',
     description: 'Long-wave infrared thermal camera core 640x512 with 30Hz frame rate.',
-    image: '📷'
+    image: 'Camera'
   },
   {
     id: 'PRD-1007',
@@ -128,7 +128,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'ElectroCore Global',
     description: 'DIN-rail managed Gigabit Ethernet switch with redundant DC power inputs.',
-    image: '🔌'
+    image: 'Plug'
   },
   {
     id: 'PRD-1008',
@@ -146,7 +146,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'Apex Dynamics Corp',
     description: 'Precision low-backlash planetary reducer for servo motors.',
-    image: '🔩'
+    image: 'Wrench'
   },
   {
     id: 'PRD-1009',
@@ -164,7 +164,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'rolls',
     supplier: 'Vortex Flow Systems',
     description: 'Four-spiral steel wire reinforced rubber hose rated up to 450 bar working pressure.',
-    image: '➰'
+    image: 'Layers'
   },
   {
     id: 'PRD-1010',
@@ -182,7 +182,7 @@ export const INITIAL_PRODUCTS = [
     unit: 'pcs',
     supplier: 'ElectroCore Global',
     description: 'Digital servo drive with CANopen, EtherCAT, and integrated safety torque-off.',
-    image: '🔋'
+    image: 'Sliders'
   }
 ];
 
