@@ -3,7 +3,18 @@
 // Native fetch client with authorization headers and centralized error handling
 // ============================================================================
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api/v1';
+const getBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl.startsWith('http')) {
+    if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return envUrl.replace('localhost', window.location.hostname).replace('127.0.0.1', window.location.hostname);
+    }
+    return envUrl;
+  }
+  return envUrl || '/api/v1';
+};
+
+const BASE_URL = getBaseUrl();
 
 class ApiClient {
   constructor(baseUrl) {

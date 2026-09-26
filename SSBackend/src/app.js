@@ -29,10 +29,10 @@ app.use(
   })
 );
 
-// CORS configuration (Hackathon-friendly wildcard & credentials support)
+// CORS configuration (Reflects origin to allow credentials and LAN/Wi-Fi devices)
 app.use(
   cors({
-    origin: '*',
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
