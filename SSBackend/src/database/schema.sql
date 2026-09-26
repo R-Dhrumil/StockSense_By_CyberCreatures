@@ -130,3 +130,63 @@ CREATE TABLE IF NOT EXISTS stock_levels (
 
 CREATE INDEX IF NOT EXISTS idx_stock_levels_product_id ON stock_levels(product_id);
 CREATE INDEX IF NOT EXISTS idx_stock_levels_location_id ON stock_levels(location_id);
+
+-- 7. Operations Table (Receipts, Deliveries, Transfers, Adjustments)
+CREATE TABLE IF NOT EXISTS operations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  operation_number VARCHAR(100) NOT NULL UNIQUE,
+  type VARCHAR(50) NOT NULL CHECK (type IN ('RECEIPT', 'DELIVERY', 'TRANSFER', 'ADJUSTMENT')),
+  source_location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  dest_location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  partner_name VARCHAR(255),
+  partner_contact VARCHAR(255),
+  shipping_carrier VARCHAR(100) DEFAULT 'FedEx Express',
+  tracking_number VARCHAR(100) DEFAULT 'Pending',
+  expected_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'WAITING', 'READY', 'PACKED', 'DONE', 'CANCELLED')),
+  notes TEXT,
+  total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  validated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  validated_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_operations_type ON operations(type);
+CREATE INDEX IF NOT EXISTS idx_operations_status ON operations(status);
+CREATE INDEX IF NOT EXISTS idx_operations_operation_number ON operations(operation_number);
+
+-- 8. Operation Lines (Item rows inside an operation)
+CREATE TABLE IF NOT EXISTS operation_lines (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  operation_id UUID NOT NULL REFERENCES operations(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  demanded_qty INT NOT NULL CHECK (demanded_qty > 0),
+  done_qty INT NOT NULL DEFAULT 0,
+  unit_price NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_operation_lines_operation_id ON operation_lines(operation_id);
+CREATE INDEX IF NOT EXISTS idx_operation_lines_product_id ON operation_lines(product_id);
+
+-- 9. Immutable Stock Ledger (Audit trail of every stock change)
+CREATE TABLE IF NOT EXISTS stock_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  operation_id UUID REFERENCES operations(id) ON DELETE SET NULL,
+  quantity_change INT NOT NULL,
+  balance_after INT NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  reference VARCHAR(100) NOT NULL,
+  notes TEXT,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_stock_ledger_product_id ON stock_ledger(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_ledger_location_id ON stock_ledger(location_id);
+CREATE INDEX IF NOT EXISTS idx_stock_ledger_created_at ON stock_ledger(created_at);

@@ -6,6 +6,7 @@ import productRoutes from './product.routes.js';
 import sampleRoutes from './sample.routes.js';
 import uploadRoutes from './upload.routes.js';
 import warehouseRoutes from './warehouse.routes.js';
+import operationRoutes from './operation.routes.js';
 
 const router = Router();
 
@@ -16,5 +17,7 @@ router.use('/products', productRoutes);
 router.use('/sample', sampleRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/warehouses', warehouseRoutes);
+router.use('/operations', operationRoutes);
 
 export default router;
+

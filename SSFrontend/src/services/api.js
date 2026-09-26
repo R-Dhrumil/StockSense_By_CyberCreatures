@@ -261,5 +261,41 @@ export const userApi = {
   },
 };
 
+// Operations & Delivery Orders Service Endpoints
+export const operationApi = {
+  getDeliveries: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/deliveries?${queryStr}` : '/operations/deliveries';
+    return await api.get(endpoint);
+  },
+
+  getDeliveryById: async (id) => {
+    return await api.get(`/operations/deliveries/${id}`);
+  },
+
+  createDelivery: async (deliveryData) => {
+    return await api.post('/operations/deliveries', deliveryData);
+  },
+
+  pickDelivery: async (id) => {
+    return await api.post(`/operations/deliveries/${id}/pick`, {});
+  },
+
+  packDelivery: async (id) => {
+    return await api.post(`/operations/deliveries/${id}/pack`, {});
+  },
+
+  validateDelivery: async (id, data = {}) => {
+    return await api.post(`/operations/deliveries/${id}/validate`, data);
+  },
+
+  cancelDelivery: async (id) => {
+    return await api.post(`/operations/deliveries/${id}/cancel`, {});
+  },
+};
+
 export default api;
+
 

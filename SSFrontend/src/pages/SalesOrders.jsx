@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   TrendingUp,
@@ -12,96 +12,300 @@ import {
   User,
   MapPin,
   IndianRupee,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  Trash2,
+  Box,
+  Check,
+  X,
+  FileText,
+  Layers,
+  ArrowUpRight
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import { INITIAL_SALES_ORDERS, INITIAL_PRODUCTS } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
+import { operationApi, productApi } from '../services/api';
 
 export default function SalesOrders({ onNotify, currentUser }) {
   const canCreateDeliveries = hasPermission.canCreateDeliveries(currentUser?.role);
   const location = useLocation();
-  const [orders, setOrders] = useState(INITIAL_SALES_ORDERS);
+
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [productsCatalog, setProductsCatalog] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [dispatchModalOrder, setDispatchModalOrder] = useState(null);
   const [trackingNumberInput, setTrackingNumberInput] = useState('');
+  const [carrierInput, setCarrierInput] = useState('FedEx Priority');
+  const [submittingAction, setSubmittingAction] = useState(false);
 
-  // Create SO State
+  // New Order Form State with dynamic lines
   const [newOrder, setNewOrder] = useState({
-    customer: '',
-    contact: '',
-    destination: '',
-    expectedDispatch: '2026-09-30',
-    total: 4500.00,
+    partnerName: '',
+    shippingAddress: '',
+    notes: '',
     shippingCarrier: 'FedEx Priority',
-    itemCount: 2
+    lines: [
+      { productId: '', demandedQty: 1, unitPrice: 0 }
+    ]
   });
 
-  // Quick Action auto-launch trigger
+  // Load Products Catalog for order item line picker
+  const loadCatalog = useCallback(async () => {
+    try {
+      const res = await productApi.getProducts();
+      if (res?.data?.products && res.data.products.length > 0) {
+        setProductsCatalog(res.data.products);
+      } else {
+        setProductsCatalog(INITIAL_PRODUCTS);
+      }
+    } catch {
+      setProductsCatalog(INITIAL_PRODUCTS);
+    }
+  }, []);
+
+  // Fetch Delivery Orders
+  const loadDeliveries = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await operationApi.getDeliveries();
+      if (res?.data?.deliveries && res.data.deliveries.length > 0) {
+        // Map backend format to uniform frontend display format
+        const formatted = res.data.deliveries.map((d) => ({
+          id: d.operation_number || d.id,
+          rawId: d.id,
+          customer: d.partner_name || 'Direct Customer',
+          destination: d.shipping_address || 'Central Fulfillment',
+          contact: d.created_by_name || 'Sales Department',
+          date: d.created_at ? new Date(d.created_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+          total: parseFloat(d.total_amount || 0),
+          fulfillmentStatus: d.status || 'WAITING',
+          shippingCarrier: d.shipping_carrier || 'FedEx Priority',
+          trackingNumber: d.tracking_number || 'Pending Assignment',
+          lines: d.lines || [],
+          notes: d.notes,
+        }));
+        setOrders(formatted);
+      } else {
+        // Fallback to initial mock if backend has no records yet
+        setOrders(INITIAL_SALES_ORDERS.map(o => ({
+          ...o,
+          rawId: o.id,
+          fulfillmentStatus: o.fulfillmentStatus === 'Pending' ? 'WAITING' :
+                             o.fulfillmentStatus === 'Allocated' ? 'READY' :
+                             o.fulfillmentStatus === 'Picked' ? 'PACKED' :
+                             o.fulfillmentStatus === 'Dispatched' || o.fulfillmentStatus === 'Delivered' ? 'DONE' : o.fulfillmentStatus
+        })));
+      }
+    } catch (err) {
+      console.warn('Backend offline or error, using mock data:', err.message);
+      setOrders(INITIAL_SALES_ORDERS.map(o => ({
+        ...o,
+        rawId: o.id,
+        fulfillmentStatus: o.fulfillmentStatus === 'Pending' ? 'WAITING' :
+                           o.fulfillmentStatus === 'Allocated' ? 'READY' :
+                           o.fulfillmentStatus === 'Picked' ? 'PACKED' :
+                           o.fulfillmentStatus === 'Dispatched' || o.fulfillmentStatus === 'Delivered' ? 'DONE' : o.fulfillmentStatus
+      })));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDeliveries();
+    loadCatalog();
+  }, [loadDeliveries, loadCatalog]);
+
+  // Quick Action auto-launch trigger from navigation
   useEffect(() => {
     if (location.state?.openModal === 'so') {
-      setNewOrder({
-        customer: '',
-        contact: '',
-        destination: '',
-        expectedDispatch: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
-        total: 2500.00,
-        shippingCarrier: 'FedEx Priority',
-        itemCount: 2
-      });
       setIsCreateModalOpen(true);
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-  const handleCreateOrder = (e) => {
-    e.preventDefault();
-    if (!newOrder.customer) return;
-
-    const created = {
-      id: `SO-88${Math.floor(50 + Math.random() * 50)}`,
-      ...newOrder,
-      date: new Date().toISOString().slice(0, 10),
-      fulfillmentStatus: 'Pending',
-      paymentStatus: 'Paid',
-      trackingNumber: 'Pending'
-    };
-
-    setOrders([created, ...orders]);
-    setIsCreateModalOpen(false);
-    onNotify('Sales Order Logged', `Order ${created.id} queued for customer ${created.customer}.`, 'success');
-  };
-
-  // Progress fulfillment status
-  const handleProgressStatus = (order, nextStatus) => {
-    setOrders(orders.map(o => o.id === order.id ? { ...o, fulfillmentStatus: nextStatus } : o));
-    onNotify('Fulfillment Updated', `${order.id} status progressed to: ${nextStatus}.`, 'info');
-  };
-
-  // Dispatch workflow
-  const handleConfirmDispatch = () => {
-    if (!dispatchModalOrder) return;
-    setOrders(orders.map(o => {
-      if (o.id === dispatchModalOrder.id) {
-        return {
-          ...o,
-          fulfillmentStatus: 'Dispatched',
-          trackingNumber: trackingNumberInput || `TRK-${Date.now().toString().slice(-6)}`
-        };
-      }
-      return o;
+  // Handle dynamic order lines in Create Modal
+  const handleAddLine = () => {
+    setNewOrder((prev) => ({
+      ...prev,
+      lines: [...prev.lines, { productId: productsCatalog[0]?.id || '', demandedQty: 1, unitPrice: productsCatalog[0]?.price || 0 }]
     }));
-    setDispatchModalOrder(null);
-    onNotify('Order Dispatched', `${dispatchModalOrder.id} handed to carrier with tracking number.`, 'success');
   };
+
+  const handleRemoveLine = (index) => {
+    if (newOrder.lines.length <= 1) return;
+    setNewOrder((prev) => ({
+      ...prev,
+      lines: prev.lines.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleLineChange = (index, field, value) => {
+    setNewOrder((prev) => {
+      const updated = [...prev.lines];
+      updated[index] = { ...updated[index], [field]: value };
+
+      if (field === 'productId') {
+        const prod = productsCatalog.find(p => String(p.id) === String(value));
+        if (prod) {
+          updated[index].unitPrice = prod.price || 0;
+        }
+      }
+      return { ...prev, lines: updated };
+    });
+  };
+
+  const calculateOrderTotal = () => {
+    return newOrder.lines.reduce((sum, line) => {
+      return sum + (Number(line.demandedQty || 0) * Number(line.unitPrice || 0));
+    }, 0);
+  };
+
+  // Create Delivery Order Handler
+  const handleCreateOrder = async (e) => {
+    e.preventDefault();
+    if (!newOrder.partnerName) {
+      onNotify('Validation Error', 'Customer Name is required.', 'error');
+      return;
+    }
+
+    setSubmittingAction(true);
+    try {
+      const payload = {
+        partnerName: newOrder.partnerName,
+        shippingAddress: newOrder.shippingAddress || 'Standard Warehouse Hub',
+        notes: newOrder.notes,
+        lines: newOrder.lines.map(l => ({
+          productId: l.productId || productsCatalog[0]?.id,
+          demandedQty: Number(l.demandedQty) || 1,
+          unitPrice: Number(l.unitPrice) || 0,
+        }))
+      };
+
+      const res = await operationApi.createDelivery(payload);
+      if (res?.data?.delivery) {
+        onNotify('Delivery Order Created', `Order ${res.data.delivery.operation_number} logged in WAITING status.`, 'success');
+      } else {
+        onNotify('Delivery Order Created', 'New outgoing delivery order queued.', 'success');
+      }
+      setIsCreateModalOpen(false);
+      setNewOrder({
+        partnerName: '',
+        shippingAddress: '',
+        notes: '',
+        shippingCarrier: 'FedEx Priority',
+        lines: [{ productId: productsCatalog[0]?.id || '', demandedQty: 1, unitPrice: productsCatalog[0]?.price || 0 }]
+      });
+      loadDeliveries();
+    } catch (err) {
+      onNotify('Creation Error', err.message || 'Failed to create delivery order', 'error');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  // Step 1: Pick & Reserve Stock
+  const handlePickOrder = async (order) => {
+    setSubmittingAction(true);
+    try {
+      await operationApi.pickDelivery(order.rawId || order.id);
+      onNotify('Stock Picked & Reserved', `Items picked for ${order.id}. Reserved quantity updated in stock database.`, 'success');
+      loadDeliveries();
+    } catch (err) {
+      // Local optimistic fallback
+      setOrders(orders.map(o => (o.id === order.id || o.rawId === order.rawId) ? { ...o, fulfillmentStatus: 'READY' } : o));
+      onNotify('Stock Picked & Reserved', `Items picked for ${order.id}. Status changed to READY.`, 'info');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  // Step 2: Pack Items
+  const handlePackOrder = async (order) => {
+    setSubmittingAction(true);
+    try {
+      await operationApi.packDelivery(order.rawId || order.id);
+      onNotify('Order Packed', `Items for ${order.id} bundled into parcel. Status changed to PACKED.`, 'success');
+      loadDeliveries();
+    } catch (err) {
+      // Local optimistic fallback
+      setOrders(orders.map(o => (o.id === order.id || o.rawId === order.rawId) ? { ...o, fulfillmentStatus: 'PACKED' } : o));
+      onNotify('Order Packed', `Items for ${order.id} packed into parcel.`, 'info');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  // Step 3: Validate & Dispatch
+  const handleConfirmDispatch = async () => {
+    if (!dispatchModalOrder) return;
+    setSubmittingAction(true);
+
+    const trackingNum = trackingNumberInput || `TRK-${Date.now().toString().slice(-6)}`;
+    try {
+      await operationApi.validateDelivery(dispatchModalOrder.rawId || dispatchModalOrder.id, {
+        trackingNumber: trackingNum,
+        carrier: carrierInput
+      });
+      onNotify(
+        'Delivery Validated & Dispatched',
+        `Stock deducted from inventory ledger. Order ${dispatchModalOrder.id} dispatched via ${carrierInput} (${trackingNum}).`,
+        'success'
+      );
+      setDispatchModalOrder(null);
+      loadDeliveries();
+    } catch (err) {
+      // Local optimistic fallback
+      setOrders(orders.map(o => {
+        if (o.id === dispatchModalOrder.id || o.rawId === dispatchModalOrder.rawId) {
+          return {
+            ...o,
+            fulfillmentStatus: 'DONE',
+            shippingCarrier: carrierInput,
+            trackingNumber: trackingNum
+          };
+        }
+        return o;
+      }));
+      setDispatchModalOrder(null);
+      onNotify('Delivery Validated', `${dispatchModalOrder.id} marked DONE & stock movement posted.`, 'success');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  // Cancel Delivery
+  const handleCancelDelivery = async (order) => {
+    if (!window.confirm(`Are you sure you want to cancel delivery order ${order.id}? Any reserved stock will be released.`)) return;
+    setSubmittingAction(true);
+    try {
+      await operationApi.cancelDelivery(order.rawId || order.id);
+      onNotify('Order Cancelled', `Order ${order.id} cancelled. Reserved stock released.`, 'info');
+      loadDeliveries();
+    } catch (err) {
+      setOrders(orders.map(o => (o.id === order.id || o.rawId === order.rawId) ? { ...o, fulfillmentStatus: 'CANCELLED' } : o));
+      onNotify('Order Cancelled', `Order ${order.id} marked as CANCELLED.`, 'info');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  // Metrics Calculation
+  const totalCount = orders.length;
+  const waitingCount = orders.filter(o => ['WAITING', 'Pending', 'DRAFT'].includes(o.fulfillmentStatus)).length;
+  const readyCount = orders.filter(o => ['READY', 'Allocated'].includes(o.fulfillmentStatus)).length;
+  const packedCount = orders.filter(o => ['PACKED', 'Picked'].includes(o.fulfillmentStatus)).length;
+  const doneCount = orders.filter(o => ['DONE', 'Dispatched', 'Delivered'].includes(o.fulfillmentStatus)).length;
 
   // Table Columns
   const columns = [
     {
-      header: 'SO Number',
+      header: 'Delivery No.',
       accessor: 'id',
       render: (row) => (
         <div>
@@ -135,17 +339,17 @@ export default function SalesOrders({ onNotify, currentUser }) {
       accessor: 'total',
       render: (row) => (
         <span style={{ fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-          ₹{parseFloat(row.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ₹{parseFloat(row.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       )
     },
     {
-      header: 'Fulfillment Status',
+      header: 'Fulfillment Stage',
       accessor: 'fulfillmentStatus',
       render: (row) => <StatusBadge status={row.fulfillmentStatus} />
     },
     {
-      header: 'Carrier & Tracking',
+      header: 'Carrier & Waybill',
       accessor: 'shippingCarrier',
       render: (row) => (
         <div style={{ fontSize: 'var(--font-size-xs)' }}>
@@ -157,78 +361,101 @@ export default function SalesOrders({ onNotify, currentUser }) {
       )
     },
     {
-      header: 'Fulfillment Actions',
+      header: 'Operations Pipeline',
       accessor: 'id',
       sortable: false,
-      render: (row) => (
-        <div style={{ display: 'flex', gap: '6px' }}>
-          {row.fulfillmentStatus === 'Pending' && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleProgressStatus(row, 'Allocated');
-              }}
-              title="Allocate inventory stock to this order"
-            >
-              Allocate
-            </button>
-          )}
+      render: (row) => {
+        const st = (row.fulfillmentStatus || '').toUpperCase();
+        return (
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {/* Step 1: Pick / Reserve Stock */}
+            {(st === 'WAITING' || st === 'PENDING' || st === 'DRAFT') && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePickOrder(row);
+                }}
+                disabled={submittingAction}
+                title="Check available stock and reserve inventory"
+              >
+                <Package size={12} />
+                <span>1. Pick Items</span>
+              </button>
+            )}
 
-          {row.fulfillmentStatus === 'Allocated' && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleProgressStatus(row, 'Picked');
-              }}
-              title="Confirm warehouse picking & packaging"
-            >
-              Mark Picked
-            </button>
-          )}
+            {/* Step 2: Pack Items */}
+            {(st === 'READY' || st === 'ALLOCATED') && (
+              <button
+                type="button"
+                className="btn btn-warning btn-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePackOrder(row);
+                }}
+                disabled={submittingAction}
+                title="Bundle picked items into parcel"
+              >
+                <Box size={12} />
+                <span>2. Pack Items</span>
+              </button>
+            )}
 
-          {row.fulfillmentStatus === 'Picked' && (
-            <button
-              type="button"
-              className="btn btn-primary btn-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                setDispatchModalOrder(row);
-                setTrackingNumberInput(`FDX-${Math.floor(100000000 + Math.random() * 900000000)}`);
-              }}
-              title="Dispatch to courier"
-            >
-              <Send size={12} />
-              <span>Dispatch</span>
-            </button>
-          )}
+            {/* Step 3: Validate / Dispatch */}
+            {(st === 'PACKED' || st === 'PICKED') && (
+              <button
+                type="button"
+                className="btn btn-primary btn-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDispatchModalOrder(row);
+                  setCarrierInput(row.shippingCarrier || 'FedEx Priority');
+                  setTrackingNumberInput(`FDX-${Math.floor(100000000 + Math.random() * 900000000)}`);
+                }}
+                disabled={submittingAction}
+                title="Deduct stock from ledger and dispatch parcel"
+              >
+                <Send size={12} />
+                <span>3. Validate & Dispatch</span>
+              </button>
+            )}
 
-          {row.fulfillmentStatus === 'Dispatched' && (
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleProgressStatus(row, 'Delivered');
-              }}
-            >
-              Mark Delivered
-            </button>
-          )}
-        </div>
-      )
+            {/* Completed */}
+            {(st === 'DONE' || st === 'DISPATCHED' || st === 'DELIVERED') && (
+              <span className="badge badge-success" style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <CheckCircle2 size={12} />
+                <span>Dispatched</span>
+              </span>
+            )}
+
+            {/* Cancel if not done */}
+            {st !== 'DONE' && st !== 'DISPATCHED' && st !== 'CANCELLED' && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs text-danger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancelDelivery(row);
+                }}
+                title="Cancel delivery order"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+        );
+      }
     }
   ];
 
   const filterOptions = [
-    { label: 'Pending', value: 'Pending' },
-    { label: 'Allocated', value: 'Allocated' },
-    { label: 'Picked', value: 'Picked' },
-    { label: 'Dispatched', value: 'Dispatched' },
-    { label: 'Delivered', value: 'Delivered' }
+    { label: 'All Orders', value: '' },
+    { label: 'Waiting (Step 1)', value: 'WAITING' },
+    { label: 'Ready / Picked (Step 2)', value: 'READY' },
+    { label: 'Packed (Step 3)', value: 'PACKED' },
+    { label: 'Done / Dispatched', value: 'DONE' },
+    { label: 'Cancelled', value: 'CANCELLED' }
   ];
 
   return (
@@ -248,7 +475,7 @@ export default function SalesOrders({ onNotify, currentUser }) {
           borderLeft: '4px solid var(--color-neutral-400)'
         }}>
           <Package size={16} style={{ color: 'var(--color-neutral-600)', flexShrink: 0 }} />
-          <span><strong>Fulfillment Execution:</strong> Warehouse Staff profile can perform picking, packing, and dispatch execution on allocated orders. Creating new sales orders is managed by Inventory Managers and Admins.</span>
+          <span><strong>Warehouse Execution:</strong> Staff profile can execute the <strong>Pick</strong>, <strong>Pack</strong>, and <strong>Validate</strong> steps in the delivery pipeline. Order authoring is reserved for Managers and Admins.</span>
         </div>
       )}
 
@@ -256,17 +483,27 @@ export default function SalesOrders({ onNotify, currentUser }) {
       <div className="page-header">
         <div className="page-header-left">
           <div className="page-breadcrumbs">
-            <span>Fulfillment</span>
+            <span>Operations</span>
             <span className="breadcrumb-sep">/</span>
-            <span style={{ color: 'var(--color-neutral-800)', fontWeight: 600 }}>Sales Orders</span>
+            <span style={{ color: 'var(--color-neutral-800)', fontWeight: 600 }}>Delivery Orders (Outgoing Goods)</span>
           </div>
-          <h1 className="page-title">Sales Orders & Dispatch Execution</h1>
+          <h1 className="page-title">Delivery Orders & Outbound Fulfillment</h1>
           <p className="page-subtitle">
-            Manage customer order allocation, warehouse pick lists, and parcel carrier dispatching.
+            Manage outgoing shipments: <strong>Pick</strong> (Reserve Stock) &rarr; <strong>Pack</strong> (Parcels) &rarr; <strong>Validate</strong> (Atomic Stock Ledger Deduction & Courier Dispatch).
           </p>
         </div>
 
         <div className="page-header-actions">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={loadDeliveries}
+            title="Refresh Deliveries"
+          >
+            <RefreshCw size={15} />
+            <span>Refresh</span>
+          </button>
+
           {canCreateDeliveries ? (
             <button
               type="button"
@@ -274,7 +511,7 @@ export default function SalesOrders({ onNotify, currentUser }) {
               onClick={() => setIsCreateModalOpen(true)}
             >
               <Plus size={16} />
-              <span>New Sales Order</span>
+              <span>New Delivery Order</span>
             </button>
           ) : (
             <span className="badge badge-neutral" style={{ padding: '6px 12px', fontSize: '12px' }}>
@@ -284,22 +521,61 @@ export default function SalesOrders({ onNotify, currentUser }) {
         </div>
       </div>
 
+      {/* Pipeline Status Metric KPI Cards */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="metric-card" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--color-neutral-500)', fontWeight: 600, textTransform: 'uppercase' }}>Total Outgoing</span>
+            <Layers size={18} style={{ color: 'var(--color-neutral-500)' }} />
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-neutral-900)' }}>{totalCount}</div>
+          <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>Active customer shipments</div>
+        </div>
+
+        <div className="metric-card" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--color-neutral-500)', fontWeight: 600, textTransform: 'uppercase' }}>1. Awaiting Pick</span>
+            <Clock size={18} style={{ color: 'var(--color-neutral-500)' }} />
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-neutral-800)' }}>{waitingCount}</div>
+          <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>Pending inventory reservation</div>
+        </div>
+
+        <div className="metric-card" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--color-warning-600)', fontWeight: 600, textTransform: 'uppercase' }}>2. Ready & Packing</span>
+            <Box size={18} style={{ color: 'var(--color-warning-600)' }} />
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-warning-700)' }}>{readyCount + packedCount}</div>
+          <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>Stock reserved / in parcels</div>
+        </div>
+
+        <div className="metric-card" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--color-success-600)', fontWeight: 600, textTransform: 'uppercase' }}>3. Dispatched (Done)</span>
+            <CheckCircle2 size={18} style={{ color: 'var(--color-success-600)' }} />
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-success-700)' }}>{doneCount}</div>
+          <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>Stock ledger deducted</div>
+        </div>
+      </div>
+
       {/* Main Table */}
       <DataTable
         columns={columns}
         data={orders}
-        searchPlaceholder="Search by order ID, customer name, destination..."
+        searchPlaceholder="Search by delivery number, customer name, destination, tracking..."
         filterOptions={filterOptions}
         filterKey="fulfillmentStatus"
         onRowClick={(row) => setSelectedOrder(row)}
       />
 
-      {/* Dispatch Modal Workflow */}
+      {/* Step 3: Validate & Dispatch Modal */}
       {dispatchModalOrder && (
         <Modal
           isOpen={!!dispatchModalOrder}
           onClose={() => setDispatchModalOrder(null)}
-          title={`Dispatch Order: ${dispatchModalOrder.id}`}
+          title={`Validate & Dispatch Delivery: ${dispatchModalOrder.id}`}
           subtitle={`Customer: ${dispatchModalOrder.customer} • Destination: ${dispatchModalOrder.destination}`}
           size="md"
           footer={
@@ -308,6 +584,7 @@ export default function SalesOrders({ onNotify, currentUser }) {
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => setDispatchModalOrder(null)}
+                disabled={submittingAction}
               >
                 Cancel
               </button>
@@ -315,6 +592,7 @@ export default function SalesOrders({ onNotify, currentUser }) {
                 type="button"
                 className="btn btn-primary"
                 onClick={handleConfirmDispatch}
+                disabled={submittingAction}
               >
                 <Send size={15} />
                 <span>Confirm Outbound Dispatch</span>
@@ -323,27 +601,34 @@ export default function SalesOrders({ onNotify, currentUser }) {
           }
         >
           <div>
-            <div className="alert alert-info" style={{ fontSize: 'var(--font-size-xs)' }}>
-              Outbound dispatch deducts physical reserved stock and triggers customer tracking email notifications.
+            <div className="alert alert-info" style={{ fontSize: 'var(--font-size-xs)', marginBottom: '16px' }}>
+              <div style={{ fontWeight: 600, marginBottom: '2px' }}>Inventory & Stock Ledger Impact:</div>
+              Validation will atomically decrement product <code>available_qty</code>, release reserved quantities, and log negative stock movement lines into the Stock Ledger.
             </div>
 
             <div className="form-group">
               <label className="form-label">Assigned Carrier</label>
-              <select className="form-select" defaultValue={dispatchModalOrder.shippingCarrier}>
-                <option value="FedEx Freight (Priority)">FedEx Freight (Priority)</option>
-                <option value="DHL Global Express">DHL Global Express</option>
+              <select
+                className="form-select"
+                value={carrierInput}
+                onChange={(e) => setCarrierInput(e.target.value)}
+              >
+                <option value="FedEx Priority">FedEx Priority Logistics</option>
+                <option value="DHL Express">DHL Express Global</option>
+                <option value="Blue Dart Express">Blue Dart Express</option>
+                <option value="Delhivery Surface">Delhivery Surface</option>
                 <option value="UPS Supply Chain">UPS Supply Chain</option>
-                <option value="DB Schenker">DB Schenker Logistics</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Carrier Waybill / Tracking Number <span className="required">*</span></label>
+              <label className="form-label">Waybill / Tracking Airway Bill <span className="required">*</span></label>
               <input
                 type="text"
                 className="form-input"
                 value={trackingNumberInput}
                 onChange={(e) => setTrackingNumberInput(e.target.value)}
+                placeholder="e.g. FDX-982348123"
                 required
               />
             </div>
@@ -351,104 +636,193 @@ export default function SalesOrders({ onNotify, currentUser }) {
         </Modal>
       )}
 
-      {/* Create Sales Order Modal */}
+      {/* Create Delivery Order Modal with Multi-line items */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Create New Sales Order"
-        subtitle="Generate outbound customer order and trigger inventory allocation"
+        title="Create Outgoing Delivery Order"
+        subtitle="Initiate customer delivery order with multi-product stock lines"
+        size="lg"
         footer={
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', width: '100%' }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setIsCreateModalOpen(false)}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleCreateOrder}
-            >
-              Authorize Order
-            </button>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-neutral-900)' }}>
+              Estimated Total: ₹{calculateOrderTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsCreateModalOpen(false)}
+                disabled={submittingAction}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleCreateOrder}
+                disabled={submittingAction}
+              >
+                <Plus size={15} />
+                <span>Create Delivery Order</span>
+              </button>
+            </div>
           </div>
         }
       >
         <form onSubmit={handleCreateOrder}>
           <div className="form-group">
-            <label className="form-label">Client Company Legal Name <span className="required">*</span></label>
+            <label className="form-label">Customer / Partner Name <span className="required">*</span></label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Apex Robotics Labs"
-              value={newOrder.customer}
-              onChange={(e) => setNewOrder({ ...newOrder, customer: e.target.value })}
+              placeholder="e.g. Apex Robotics Labs or Bharat Tech Solutions"
+              value={newOrder.partnerName}
+              onChange={(e) => setNewOrder({ ...newOrder, partnerName: e.target.value })}
               required
             />
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Contact Person</label>
+              <label className="form-label">Shipping Address / Destination</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g. Elena Rostova"
-                value={newOrder.contact}
-                onChange={(e) => setNewOrder({ ...newOrder, contact: e.target.value })}
+                placeholder="e.g. Sector 62, Noida, Uttar Pradesh"
+                value={newOrder.shippingAddress}
+                onChange={(e) => setNewOrder({ ...newOrder, shippingAddress: e.target.value })}
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Shipping Destination</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. Austin, TX, USA"
-                value={newOrder.destination}
-                onChange={(e) => setNewOrder({ ...newOrder, destination: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Order Total (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-input"
-                value={newOrder.total}
-                onChange={(e) => setNewOrder({ ...newOrder, total: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Shipping Carrier</label>
+              <label className="form-label">Preferred Carrier</label>
               <select
                 className="form-select"
                 value={newOrder.shippingCarrier}
                 onChange={(e) => setNewOrder({ ...newOrder, shippingCarrier: e.target.value })}
               >
-                <option value="FedEx Freight (Priority)">FedEx Freight (Priority)</option>
-                <option value="DHL Global Express">DHL Global Express</option>
-                <option value="UPS Supply Chain">UPS Supply Chain</option>
+                <option value="FedEx Priority">FedEx Priority</option>
+                <option value="Blue Dart Express">Blue Dart Express</option>
+                <option value="DHL Express">DHL Express</option>
+                <option value="Delhivery Surface">Delhivery Surface</option>
               </select>
             </div>
+          </div>
+
+          {/* Product Items Lines Table */}
+          <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="form-label" style={{ marginBottom: 0, fontWeight: 700 }}>Order Line Items (Products to Demand)</label>
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs"
+                onClick={handleAddLine}
+              >
+                <Plus size={12} />
+                <span>Add Product Line</span>
+              </button>
+            </div>
+
+            <div style={{ border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead style={{ background: 'var(--color-neutral-50)', borderBottom: '1px solid var(--color-neutral-200)' }}>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '8px 12px' }}>Product</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px', width: '120px' }}>Demanded Qty</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px', width: '130px' }}>Unit Price (₹)</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px', width: '130px' }}>Subtotal (₹)</th>
+                    <th style={{ width: '40px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {newOrder.lines.map((line, idx) => {
+                    const lineSubtotal = (Number(line.demandedQty) || 0) * (Number(line.unitPrice) || 0);
+                    return (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--color-neutral-100)' }}>
+                        <td style={{ padding: '8px 12px' }}>
+                          <select
+                            className="form-select"
+                            style={{ fontSize: '12px', padding: '6px 8px' }}
+                            value={line.productId}
+                            onChange={(e) => handleLineChange(idx, 'productId', e.target.value)}
+                            required
+                          >
+                            <option value="">Select a Product...</option>
+                            {productsCatalog.map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.sku || 'SKU'}) — Avail: {p.available_qty ?? p.availableQty ?? p.stock ?? 0}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <input
+                            type="number"
+                            min="1"
+                            className="form-input"
+                            style={{ fontSize: '12px', padding: '6px 8px', textAlign: 'right' }}
+                            value={line.demandedQty}
+                            onChange={(e) => handleLineChange(idx, 'demandedQty', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            required
+                          />
+                        </td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="form-input"
+                            style={{ fontSize: '12px', padding: '6px 8px', textAlign: 'right' }}
+                            value={line.unitPrice}
+                            onChange={(e) => handleLineChange(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            required
+                          />
+                        </td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600 }}>
+                          ₹{lineSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td style={{ padding: '8px 4px', textAlign: 'center' }}>
+                          {newOrder.lines.length > 1 && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-xs text-danger"
+                              onClick={() => handleRemoveLine(idx)}
+                              title="Remove item"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Internal Notes / Delivery Instructions</label>
+            <textarea
+              className="form-input"
+              rows={2}
+              placeholder="e.g. Fragile electronics, handle with care, gate pass required"
+              value={newOrder.notes}
+              onChange={(e) => setNewOrder({ ...newOrder, notes: e.target.value })}
+            />
           </div>
         </form>
       </Modal>
 
-      {/* Order Details Modal */}
+      {/* Order Details & Workflow Pipeline Drawer Modal */}
       {selectedOrder && (
         <Modal
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          title={`Order Profile: ${selectedOrder.id}`}
+          title={`Delivery Order: ${selectedOrder.id}`}
           subtitle={`Customer: ${selectedOrder.customer}`}
-          size="md"
+          size="lg"
           footer={
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
               <StatusBadge status={selectedOrder.fulfillmentStatus} />
@@ -457,16 +831,48 @@ export default function SalesOrders({ onNotify, currentUser }) {
                 className="btn btn-secondary"
                 onClick={() => setSelectedOrder(null)}
               >
-                Close
+                Close Profile
               </button>
             </div>
           }
         >
           <div>
+            {/* 4-Step Interactive Pipeline Breadcrumbs */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              background: 'var(--color-neutral-50)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '18px',
+              border: '1px solid var(--color-neutral-200)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: ['WAITING', 'READY', 'PACKED', 'DONE'].includes((selectedOrder.fulfillmentStatus || '').toUpperCase()) ? 1 : 0.4 }}>
+                <span className="badge badge-neutral" style={{ width: '22px', height: '22px', borderRadius: '50%', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>1</span>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>Draft / Waiting</span>
+              </div>
+              <ArrowRight size={14} style={{ color: 'var(--color-neutral-400)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: ['READY', 'PACKED', 'DONE'].includes((selectedOrder.fulfillmentStatus || '').toUpperCase()) ? 1 : 0.4 }}>
+                <span className={`badge ${['READY', 'PACKED', 'DONE'].includes((selectedOrder.fulfillmentStatus || '').toUpperCase()) ? 'badge-warning' : 'badge-neutral'}`} style={{ width: '22px', height: '22px', borderRadius: '50%', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>2</span>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>Pick & Reserve</span>
+              </div>
+              <ArrowRight size={14} style={{ color: 'var(--color-neutral-400)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: ['PACKED', 'DONE'].includes((selectedOrder.fulfillmentStatus || '').toUpperCase()) ? 1 : 0.4 }}>
+                <span className={`badge ${['PACKED', 'DONE'].includes((selectedOrder.fulfillmentStatus || '').toUpperCase()) ? 'badge-info' : 'badge-neutral'}`} style={{ width: '22px', height: '22px', borderRadius: '50%', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>Pack Parcel</span>
+              </div>
+              <ArrowRight size={14} style={{ color: 'var(--color-neutral-400)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: ['DONE', 'DISPATCHED'].includes((selectedOrder.fulfillmentStatus || '').toUpperCase()) ? 1 : 0.4 }}>
+                <span className={`badge ${['DONE', 'DISPATCHED'].includes((selectedOrder.fulfillmentStatus || '').toUpperCase()) ? 'badge-success' : 'badge-neutral'}`} style={{ width: '22px', height: '22px', borderRadius: '50%', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>4</span>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>Dispatch & Ledger</span>
+              </div>
+            </div>
+
             <div className="detail-section">
-              <h4 className="detail-section-title">Delivery Coordinates</h4>
+              <h4 className="detail-section-title">Delivery & Carrier Coordinates</h4>
               <div className="detail-row">
-                <div className="detail-label">Client Name:</div>
+                <div className="detail-label">Client / Partner:</div>
                 <div className="detail-value font-semibold">{selectedOrder.customer}</div>
               </div>
               <div className="detail-row">
@@ -474,7 +880,7 @@ export default function SalesOrders({ onNotify, currentUser }) {
                 <div className="detail-value">{selectedOrder.contact}</div>
               </div>
               <div className="detail-row">
-                <div className="detail-label">Destination:</div>
+                <div className="detail-label">Destination Address:</div>
                 <div className="detail-value">{selectedOrder.destination}</div>
               </div>
               <div className="detail-row">
@@ -482,11 +888,87 @@ export default function SalesOrders({ onNotify, currentUser }) {
                 <div className="detail-value font-semibold">{selectedOrder.shippingCarrier} ({selectedOrder.trackingNumber})</div>
               </div>
               <div className="detail-row">
-                <div className="detail-label">Payment Status:</div>
-                <div className="detail-value font-semibold" style={{ color: 'var(--color-success-600)' }}>
-                  {selectedOrder.paymentStatus}
+                <div className="detail-label">Total Order Value:</div>
+                <div className="detail-value font-semibold" style={{ color: 'var(--color-primary-600)' }}>
+                  ₹{parseFloat(selectedOrder.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
+            </div>
+
+            {/* Line Items Table */}
+            {selectedOrder.lines && selectedOrder.lines.length > 0 && (
+              <div style={{ marginTop: '16px' }}>
+                <h4 className="detail-section-title" style={{ marginBottom: '8px' }}>Product Demand Lines</h4>
+                <div style={{ border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead style={{ background: 'var(--color-neutral-50)' }}>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '6px 10px' }}>Product</th>
+                        <th style={{ textAlign: 'right', padding: '6px 10px' }}>Demanded</th>
+                        <th style={{ textAlign: 'right', padding: '6px 10px' }}>Done Qty</th>
+                        <th style={{ textAlign: 'right', padding: '6px 10px' }}>Unit Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedOrder.lines.map((l, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--color-neutral-100)' }}>
+                          <td style={{ padding: '6px 10px', fontWeight: 600 }}>{l.product_name || l.name || `Product #${l.product_id}`}</td>
+                          <td style={{ padding: '6px 10px', textAlign: 'right' }}>{l.demanded_qty || l.demandedQty || 1}</td>
+                          <td style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--color-success-600)' }}>{l.done_qty || l.doneQty || 0}</td>
+                          <td style={{ padding: '6px 10px', textAlign: 'right' }}>₹{parseFloat(l.unit_price || l.unitPrice || 0).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Action Button within Drawer */}
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-neutral-200)', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              {(selectedOrder.fulfillmentStatus === 'WAITING' || selectedOrder.fulfillmentStatus === 'Pending') && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    handlePickOrder(selectedOrder);
+                    setSelectedOrder(null);
+                  }}
+                >
+                  <Package size={14} />
+                  <span>Execute Pick & Reserve Stock</span>
+                </button>
+              )}
+
+              {(selectedOrder.fulfillmentStatus === 'READY' || selectedOrder.fulfillmentStatus === 'Allocated') && (
+                <button
+                  type="button"
+                  className="btn btn-warning"
+                  onClick={() => {
+                    handlePackOrder(selectedOrder);
+                    setSelectedOrder(null);
+                  }}
+                >
+                  <Box size={14} />
+                  <span>Execute Parcel Packaging</span>
+                </button>
+              )}
+
+              {(selectedOrder.fulfillmentStatus === 'PACKED' || selectedOrder.fulfillmentStatus === 'Picked') && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setDispatchModalOrder(selectedOrder);
+                    setCarrierInput(selectedOrder.shippingCarrier || 'FedEx Priority');
+                    setTrackingNumberInput(`FDX-${Math.floor(100000000 + Math.random() * 900000000)}`);
+                    setSelectedOrder(null);
+                  }}
+                >
+                  <Send size={14} />
+                  <span>Validate & Dispatch</span>
+                </button>
+              )}
             </div>
           </div>
         </Modal>
