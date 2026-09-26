@@ -190,10 +190,10 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
       </div>
 
       {/* Module 9: 5 Core Operational KPI Cards Grid */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="kpi-grid">
         {/* KPI 1: Total Products in Stock */}
         <KpiCard
-          title="1. Products in Stock"
+          title="Products in Stock"
           value={`${metrics.totalProductsInStock} SKUs`}
           subtext="Active catalog items"
           icon={Package}
@@ -205,7 +205,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
 
         {/* KPI 2: Low / Out of Stock Items */}
         <KpiCard
-          title="2. Low / Out of Stock"
+          title="Low / Out of Stock"
           value={`${metrics.lowStockCount + metrics.outOfStockCount} Items`}
           subtext={`${metrics.outOfStockCount} Critical Out-of-Stock`}
           icon={AlertTriangle}
@@ -217,7 +217,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
 
         {/* KPI 3: Pending Receipts */}
         <KpiCard
-          title="3. Pending Receipts"
+          title="Pending Receipts"
           value={`${metrics.pendingReceipts} Orders`}
           subtext="Inbound goods awaiting receipt"
           icon={ShoppingCart}
@@ -229,7 +229,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
 
         {/* KPI 4: Pending Deliveries */}
         <KpiCard
-          title="4. Pending Deliveries"
+          title="Pending Deliveries"
           value={`${metrics.pendingDeliveries} Shipments`}
           subtext="Outbound customer orders"
           icon={Truck}
@@ -241,7 +241,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
 
         {/* KPI 5: Internal Transfers Scheduled */}
         <KpiCard
-          title="5. Transfers Scheduled"
+          title="Transfers Scheduled"
           value={`${metrics.internalTransfersScheduled} Relocations`}
           subtext="Inter-rack / hub balance"
           icon={ArrowLeftRight}

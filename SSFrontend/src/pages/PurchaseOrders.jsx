@@ -24,6 +24,7 @@ import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import Drawer from '../components/common/Drawer';
+import KpiCard from '../components/common/KpiCard';
 import { INITIAL_PURCHASE_ORDERS, INITIAL_SUPPLIERS, INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
 
@@ -517,7 +518,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
       accessor: 'totalAmount',
       render: (row) => (
         <span style={{ fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-          ${parseFloat(row.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ₹{parseFloat(row.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       )
     },
@@ -657,6 +658,38 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
             </span>
           )}
         </div>
+      </div>
+
+      {/* KPI Summary Cards */}
+      <div className="kpi-grid">
+        <KpiCard
+          title="Total Inbound"
+          value={orders.length}
+          subtext="Active vendor receipts"
+          icon={ShoppingCart}
+          variant="primary"
+        />
+        <KpiCard
+          title="1. Pending Receipt"
+          value={orders.filter(o => o.status === 'Ordered' || o.status === 'Draft' || o.rawStatus === 'READY' || o.rawStatus === 'DRAFT').length}
+          subtext="Awaiting vendor delivery"
+          icon={Clock}
+          variant="warning"
+        />
+        <KpiCard
+          title="2. Partial Inbound"
+          value={orders.filter(o => o.status === 'Partially Received').length}
+          subtext="Goods partially accepted"
+          icon={Truck}
+          variant="info"
+        />
+        <KpiCard
+          title="3. Received & Stocked"
+          value={orders.filter(o => o.status === 'Received' || o.rawStatus === 'DONE').length}
+          subtext="Validated in inventory ledger"
+          icon={CheckCircle2}
+          variant="success"
+        />
       </div>
 
       {/* Receipts Data Table */}

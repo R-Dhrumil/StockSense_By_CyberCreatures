@@ -25,6 +25,7 @@ import {
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
+import KpiCard from '../components/common/KpiCard';
 import { INITIAL_SALES_ORDERS, INITIAL_PRODUCTS } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
 import { operationApi, productApi } from '../services/api';
@@ -522,42 +523,46 @@ export default function SalesOrders({ onNotify, currentUser }) {
       </div>
 
       {/* Pipeline Status Metric KPI Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="metric-card" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--color-neutral-500)', fontWeight: 600, textTransform: 'uppercase' }}>Total Outgoing</span>
-            <Layers size={18} style={{ color: 'var(--color-neutral-500)' }} />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-neutral-900)' }}>{totalCount}</div>
-          <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>Active customer shipments</div>
-        </div>
+      <div className="kpi-grid">
+        <KpiCard
+          title="Total Outgoing Orders"
+          value={totalCount}
+          subtext="Active customer shipments"
+          icon={Layers}
+          trend="All Shipments"
+          trendDirection="up"
+          variant="primary"
+        />
 
-        <div className="metric-card" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--color-neutral-500)', fontWeight: 600, textTransform: 'uppercase' }}>1. Awaiting Pick</span>
-            <Clock size={18} style={{ color: 'var(--color-neutral-500)' }} />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-neutral-800)' }}>{waitingCount}</div>
-          <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>Pending inventory reservation</div>
-        </div>
+        <KpiCard
+          title="1. Awaiting Pick"
+          value={waitingCount}
+          subtext="Pending inventory reservation"
+          icon={Clock}
+          trend="Step 1"
+          trendDirection="down"
+          variant="info"
+        />
 
-        <div className="metric-card" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--color-warning-600)', fontWeight: 600, textTransform: 'uppercase' }}>2. Ready & Packing</span>
-            <Box size={18} style={{ color: 'var(--color-warning-600)' }} />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-warning-700)' }}>{readyCount + packedCount}</div>
-          <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>Stock reserved / in parcels</div>
-        </div>
+        <KpiCard
+          title="2. Ready & Packing"
+          value={readyCount + packedCount}
+          subtext="Stock reserved / in parcels"
+          icon={Package}
+          trend="Step 2"
+          trendDirection="up"
+          variant="warning"
+        />
 
-        <div className="metric-card" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--color-success-600)', fontWeight: 600, textTransform: 'uppercase' }}>3. Dispatched (Done)</span>
-            <CheckCircle2 size={18} style={{ color: 'var(--color-success-600)' }} />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-success-700)' }}>{doneCount}</div>
-          <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)', marginTop: '4px' }}>Stock ledger deducted</div>
-        </div>
+        <KpiCard
+          title="3. Dispatched (Done)"
+          value={doneCount}
+          subtext="Stock ledger deducted"
+          icon={CheckCircle2}
+          trend="Completed"
+          trendDirection="up"
+          variant="success"
+        />
       </div>
 
       {/* Main Table */}
