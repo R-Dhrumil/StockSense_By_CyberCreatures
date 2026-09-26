@@ -62,6 +62,7 @@ const renderProductIcon = (iconKey) => {
 export default function Products({ products, setProducts, onNotify }) {
   const location = useLocation();
   const [selectedRows, setSelectedRows] = useState([]);
+  const [stockStatusFilter, setStockStatusFilter] = useState('ALL'); // 'ALL' | 'LOW' | 'IN_STOCK' | 'OUT_OF_STOCK'
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState('create'); // 'create' | 'edit'
   const [activeDrawerTab, setActiveDrawerTab] = useState('basic');
@@ -150,10 +151,13 @@ export default function Products({ products, setProducts, onNotify }) {
     setIsDrawerOpen(true);
   };
 
-  // Quick Action auto-launch trigger
+  // Quick Action & Filter auto-launch trigger
   useEffect(() => {
     if (location.state?.openModal === 'product') {
       handleOpenCreate();
+      window.history.replaceState({}, document.title);
+    } else if (location.state?.filterStatus === 'low') {
+      setStockStatusFilter('LOW');
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -360,6 +364,32 @@ export default function Products({ products, setProducts, onNotify }) {
     value: cat.name
   }));
 
+  // Filter products by stock health status
+  const displayedProducts = useMemo(() => {
+    if (stockStatusFilter === 'LOW') {
+      return products.filter(p => 
+        p.status === 'Low Stock' || 
+        p.status === 'Out of Stock' || 
+        (Number(p.availableQty ?? 0) <= Number(p.reorderLevel ?? 0))
+      );
+    }
+    if (stockStatusFilter === 'IN_STOCK') {
+      return products.filter(p => p.status === 'In Stock' && Number(p.availableQty ?? 0) > Number(p.reorderLevel ?? 0));
+    }
+    if (stockStatusFilter === 'OUT_OF_STOCK') {
+      return products.filter(p => p.status === 'Out of Stock' || Number(p.availableQty ?? 0) === 0);
+    }
+    return products;
+  }, [products, stockStatusFilter]);
+
+  const lowStockCount = useMemo(() => {
+    return products.filter(p => 
+      p.status === 'Low Stock' || 
+      p.status === 'Out of Stock' || 
+      (Number(p.availableQty ?? 0) <= Number(p.reorderLevel ?? 0))
+    ).length;
+  }, [products]);
+
   return (
     <div className="products-page animate-fade-in">
       {/* Header */}
@@ -424,10 +454,56 @@ export default function Products({ products, setProducts, onNotify }) {
         </div>
       )}
 
+      {/* Stock Health Segment Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            type="button"
+            className={`btn btn-sm ${stockStatusFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ height: '32px', fontSize: '12px' }}
+            onClick={() => setStockStatusFilter('ALL')}
+          >
+            All Products ({products.length})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${stockStatusFilter === 'IN_STOCK' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ height: '32px', fontSize: '12px' }}
+            onClick={() => setStockStatusFilter('IN_STOCK')}
+          >
+            In Stock ({products.filter(p => p.status === 'In Stock').length})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${stockStatusFilter === 'LOW' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ 
+              height: '32px', 
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              borderColor: stockStatusFilter === 'LOW' ? 'var(--color-danger-500)' : 'var(--color-danger-200)',
+              color: stockStatusFilter === 'LOW' ? '#fff' : 'var(--color-danger-600)',
+              backgroundColor: stockStatusFilter === 'LOW' ? 'var(--color-danger-600)' : 'transparent'
+            }}
+            onClick={() => setStockStatusFilter(stockStatusFilter === 'LOW' ? 'ALL' : 'LOW')}
+          >
+            <AlertTriangle size={14} />
+            <span>Low & Reorder Alert ({lowStockCount})</span>
+          </button>
+        </div>
+
+        {stockStatusFilter === 'LOW' && (
+          <span style={{ fontSize: '12px', color: 'var(--color-danger-600)', fontWeight: 500 }}>
+            Showing {displayedProducts.length} items requiring replenishment
+          </span>
+        )}
+      </div>
+
       {/* Main Data Table */}
       <DataTable
         columns={columns}
-        data={products}
+        data={displayedProducts}
         searchPlaceholder="Search by name, SKU, barcode, supplier..."
         filterOptions={filterOptions}
         filterKey="category"
