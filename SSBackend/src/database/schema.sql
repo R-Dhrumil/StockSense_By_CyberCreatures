@@ -130,3 +130,51 @@ CREATE TABLE IF NOT EXISTS stock_levels (
 
 CREATE INDEX IF NOT EXISTS idx_stock_levels_product_id ON stock_levels(product_id);
 CREATE INDEX IF NOT EXISTS idx_stock_levels_location_id ON stock_levels(location_id);
+
+-- 7. Operations Table (Receipts, Deliveries, Internal Transfers, Adjustments)
+CREATE TABLE IF NOT EXISTS operations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  operation_number VARCHAR(100) NOT NULL UNIQUE,
+  type VARCHAR(50) NOT NULL CHECK (type IN ('RECEIPT', 'DELIVERY', 'INTERNAL', 'ADJUSTMENT')),
+  status VARCHAR(50) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'WAITING', 'READY', 'DONE', 'CANCELED')),
+  partner_name VARCHAR(255),
+  source_location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  dest_location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  reference_note TEXT,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  validated_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_operations_type ON operations(type);
+CREATE INDEX IF NOT EXISTS idx_operations_status ON operations(status);
+CREATE INDEX IF NOT EXISTS idx_operations_number ON operations(operation_number);
+
+-- 8. Operation Line Items Table
+CREATE TABLE IF NOT EXISTS operation_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  operation_id UUID NOT NULL REFERENCES operations(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  demanded_qty INT NOT NULL DEFAULT 1,
+  done_qty INT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_operation_items_op_id ON operation_items(operation_id);
+CREATE INDEX IF NOT EXISTS idx_operation_items_product_id ON operation_items(product_id);
+
+-- 9. Stock Ledger (Audit Trail for every physical stock move)
+CREATE TABLE IF NOT EXISTS stock_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  quantity_change INT NOT NULL,
+  move_type VARCHAR(50) NOT NULL CHECK (move_type IN ('RECEIPT', 'DELIVERY', 'INTERNAL', 'ADJUSTMENT')),
+  reference_number VARCHAR(100) NOT NULL,
+  notes TEXT,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_stock_ledger_product_id ON stock_ledger(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_ledger_location_id ON stock_ledger(location_id);
+CREATE INDEX IF NOT EXISTS idx_stock_ledger_ref ON stock_ledger(reference_number);
