@@ -28,13 +28,14 @@ import KpiCard from '../components/common/KpiCard';
 import { INITIAL_PURCHASE_ORDERS, INITIAL_SUPPLIERS, INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
 
-export default function PurchaseOrders({ onNotify, products, setProducts, warehouses = INITIAL_WAREHOUSES, currentUser }) {
-  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : INITIAL_WAREHOUSES;
+export default function PurchaseOrders({ onNotify, products, setProducts, warehouses = [], currentUser }) {
+  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : [];
+  const SUPPLIER_LIST = ['Apex Dynamics Corp', 'LuminoTech Precision', 'Vortex Flow Systems', 'ElectroCore Global', 'Titanium Mechanical Inc'];
   const canCreateReceipts = hasPermission.canCreateReceipts(currentUser?.role);
   const canValidateReceipts = hasPermission.canValidateReceipts(currentUser?.role);
   const location = useLocation();
 
-  const [orders, setOrders] = useState(INITIAL_PURCHASE_ORDERS);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -55,7 +56,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
 
   // New PO / Receipt Form State
   const [newPo, setNewPo] = useState({
-    supplier: INITIAL_SUPPLIERS[0]?.name || 'Apex Dynamics Corp',
+    supplier: SUPPLIER_LIST[0],
     warehouseId: facilityList[0]?.id || '',
     warehouseName: facilityList[0]?.name || 'Main Central Hub',
     locationId: '',
@@ -168,7 +169,7 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
   const handleOpenCreate = () => {
     const defaultWarehouse = facilityList[0];
     setNewPo({
-      supplier: INITIAL_SUPPLIERS[0]?.name || 'Apex Dynamics Corp',
+      supplier: SUPPLIER_LIST[0],
       warehouseId: defaultWarehouse?.id || '',
       warehouseName: defaultWarehouse?.name || 'Main Central Hub',
       locationId: '',
@@ -776,10 +777,8 @@ export default function PurchaseOrders({ onNotify, products, setProducts, wareho
                 value={newPo.supplier}
                 onChange={(e) => setNewPo({ ...newPo, supplier: e.target.value })}
               >
-                {INITIAL_SUPPLIERS.map(s => (
-                  <option key={s.id} value={s.name}>
-                    {s.name} ({s.location}) — Terms: {s.paymentTerms}
-                  </option>
+                {SUPPLIER_LIST.map(s => (
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </div>

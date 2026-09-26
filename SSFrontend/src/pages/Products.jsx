@@ -30,7 +30,7 @@ import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import Drawer from '../components/common/Drawer';
-import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_WAREHOUSES, INITIAL_SUPPLIERS } from '../data/mockData';
+
 import { productApi, categoryApi } from '../services/api';
 import { hasPermission, normalizeRole } from '../utils/permissions';
 
@@ -60,8 +60,8 @@ const renderProductIcon = (iconKey) => {
   return <Comp size={16} />;
 };
 
-export default function Products({ products, setProducts, onNotify, warehouses = INITIAL_WAREHOUSES, currentUser, isLoading: externalLoading }) {
-  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : INITIAL_WAREHOUSES;
+export default function Products({ products, setProducts, onNotify, warehouses = [], currentUser, isLoading: externalLoading }) {
+  const facilityList = (warehouses && warehouses.length > 0) ? warehouses : [];
   const canManageProducts = hasPermission.canManageProducts(currentUser?.role);
   const location = useLocation();
   const [selectedRows, setSelectedRows] = useState([]);
@@ -70,7 +70,7 @@ export default function Products({ products, setProducts, onNotify, warehouses =
   const [drawerMode, setDrawerMode] = useState('create'); // 'create' | 'edit'
   const [activeDrawerTab, setActiveDrawerTab] = useState('basic');
   const [viewProductModal, setViewProductModal] = useState(null);
-  const [categoriesList, setCategoriesList] = useState(INITIAL_CATEGORIES);
+  const [categoriesList, setCategoriesList] = useState([]);
   const [isApiLoading, setIsApiLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -664,8 +664,8 @@ export default function Products({ products, setProducts, onNotify, warehouses =
                   value={formData.supplier}
                   onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
                 >
-                  {INITIAL_SUPPLIERS.map(sup => (
-                    <option key={sup.id} value={sup.name}>{sup.name}</option>
+                  {['Apex Dynamics Corp', 'LuminoTech Precision', 'Vortex Flow Systems', 'ElectroCore Global', 'Titanium Mechanical Inc'].map(s => (
+                    <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>

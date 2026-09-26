@@ -13,13 +13,13 @@ import {
 } from 'lucide-react';
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
-import { INITIAL_CATEGORIES } from '../data/mockData';
+
 import { categoryApi } from '../services/api';
 import { hasPermission } from '../utils/permissions';
 
 export default function Categories({ onNotify, currentUser }) {
   const canManageCategories = hasPermission.canManageProducts(currentUser?.role);
-  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [categories, setCategories] = useState([]);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');

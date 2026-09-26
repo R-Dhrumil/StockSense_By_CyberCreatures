@@ -21,7 +21,7 @@ import Reports from './pages/Reports';
 import UsersManagement from './pages/UsersManagement';
 import Settings from './pages/Settings';
 
-import { INITIAL_PRODUCTS, DEFAULT_NOTIFICATIONS, INITIAL_WAREHOUSES } from './data/mockData';
+
 import { api, authApi, productApi, warehouseApi } from './services/api';
 import { subscribeToEvent, initSocket } from './services/socket';
 import './App.css';
@@ -43,11 +43,11 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeWarehouse, setActiveWarehouse] = useState('All');
-  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
-  const [warehouses, setWarehouses] = useState(INITIAL_WAREHOUSES);
+  const [products, setProducts] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [isWarehousesLoading, setIsWarehousesLoading] = useState(true);
 
@@ -68,13 +68,17 @@ export default function App() {
   };
 
   const refreshProductsList = () => {
+    setIsProductsLoading(true);
     productApi.getProducts()
       .then(res => {
         if (res?.data?.products && res.data.products.length > 0) {
           setProducts(res.data.products);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setIsProductsLoading(false);
+      });
   };
 
   // Fetch live products and warehouses on startup
@@ -105,61 +109,69 @@ export default function App() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    initSocket();
+    let unsubFns = [];
 
-    // 1. Critical Low-Stock Alert
-    const unsubLowStock = subscribeToEvent('alert:low_stock', (data) => {
-      const newNotification = {
-        id: `notif-${Date.now()}`,
-        title: data.severity === 'CRITICAL' ? 'Critical Out of Stock' : 'Low Stock Warning',
-        message: data.message || `Item ${data.productName || data.productId} reached low threshold (${data.currentStock} units left).`,
-        type: data.severity === 'CRITICAL' ? 'danger' : 'warning',
-        timestamp: 'Just now',
-        unread: true,
-      };
+    const setup = async () => {
+      try {
+        await initSocket();
+      } catch {
+        // Socket unavailable — real-time features disabled silently
+        return;
+      }
 
-      setNotifications(prev => [newNotification, ...prev]);
-      addToast(newNotification.title, newNotification.message, newNotification.type === 'danger' ? 'error' : 'warning');
-      refreshProductsList();
-    });
+      // 1. Critical Low-Stock Alert
+      const unsubLowStock = subscribeToEvent('alert:low_stock', (data) => {
+        const newNotification = {
+          id: `notif-${Date.now()}`,
+          title: data.severity === 'CRITICAL' ? 'Critical Out of Stock' : 'Low Stock Warning',
+          message: data.message || `Item ${data.productName || data.productId} reached low threshold (${data.currentStock} units left).`,
+          type: data.severity === 'CRITICAL' ? 'danger' : 'warning',
+          timestamp: 'Just now',
+          unread: true,
+        };
 
-    // 2. Stock Balance Movement / Change
-    const unsubStockChanged = subscribeToEvent('stock:changed', () => {
-      refreshProductsList();
-    });
+        setNotifications(prev => [newNotification, ...prev]);
+        addToast(newNotification.title, newNotification.message, newNotification.type === 'danger' ? 'error' : 'warning');
+        refreshProductsList();
+      });
 
-    const unsubStockUpdated = subscribeToEvent('stock:updated', () => {
-      refreshProductsList();
-    });
+      // 2. Stock Balance Movement / Change
+      const unsubStockChanged = subscribeToEvent('stock:changed', () => {
+        refreshProductsList();
+      });
 
-    // 3. Inbound Receipt Validated
-    const unsubReceipt = subscribeToEvent('receipt:validated', (data) => {
-      const opNum = data.receipt?.operationNumber || 'Receipt';
-      addToast('Inbound Shipment Received', `${opNum} successfully checked in and added to stock.`, 'success');
-      refreshProductsList();
-    });
+      const unsubStockUpdated = subscribeToEvent('stock:updated', () => {
+        refreshProductsList();
+      });
 
-    // 4. Outbound Delivery Validated
-    const unsubDelivery = subscribeToEvent('delivery:validated', (data) => {
-      const opNum = data.delivery?.operationNumber || 'Delivery';
-      addToast('Order Dispatched', `${opNum} dispatched to carrier and stock ledger updated.`, 'info');
-      refreshProductsList();
-    });
+      // 3. Inbound Receipt Validated
+      const unsubReceipt = subscribeToEvent('receipt:validated', (data) => {
+        const opNum = data.receipt?.operationNumber || 'Receipt';
+        addToast('Inbound Shipment Received', `${opNum} successfully checked in and added to stock.`, 'success');
+        refreshProductsList();
+      });
 
-    // 5. Transfer Validated
-    const unsubTransfer = subscribeToEvent('transfer:validated', (data) => {
-      const opNum = data.transfer?.operationNumber || 'Transfer';
-      addToast('Internal Transfer Completed', `${opNum} inventory relocated.`, 'info');
-      refreshProductsList();
-    });
+      // 4. Outbound Delivery Validated
+      const unsubDelivery = subscribeToEvent('delivery:validated', (data) => {
+        const opNum = data.delivery?.operationNumber || 'Delivery';
+        addToast('Order Dispatched', `${opNum} dispatched to carrier and stock ledger updated.`, 'info');
+        refreshProductsList();
+      });
+
+      // 5. Transfer Validated
+      const unsubTransfer = subscribeToEvent('transfer:validated', (data) => {
+        const opNum = data.transfer?.operationNumber || 'Transfer';
+        addToast('Internal Transfer Completed', `${opNum} inventory relocated.`, 'info');
+        refreshProductsList();
+      });
+
+      unsubFns = [unsubLowStock, unsubStockChanged, unsubStockUpdated, unsubReceipt, unsubDelivery, unsubTransfer];
+    };
+
+    setup();
 
     return () => {
-      unsubLowStock();
-      unsubStockChanged();
-      unsubStockUpdated();
-      unsubReceipt();
-      unsubDelivery();
-      unsubTransfer();
+      unsubFns.forEach(fn => fn && fn());
     };
   }, [isAuthenticated]);
 

@@ -37,13 +37,7 @@ import {
 } from 'recharts';
 import KpiCard from '../components/common/KpiCard';
 import StatusBadge from '../components/common/StatusBadge';
-import {
-  DASHBOARD_TREND_DATA,
-  CATEGORY_DISTRIBUTION_DATA,
-  INITIAL_PRODUCTS,
-  INITIAL_WAREHOUSES,
-  INITIAL_CATEGORIES
-} from '../data/mockData';
+
 import { hasPermission, normalizeRole, ROLES, ROLE_LABELS } from '../utils/permissions';
 import { dashboardApi, categoryApi, warehouseApi } from '../services/api';
 
@@ -74,8 +68,27 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
     search: ''
   });
 
-  const [facilities, setFacilities] = useState(INITIAL_WAREHOUSES);
-  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  // Chart data (visual placeholders — replace with API when analytics endpoint is ready)
+  const DASHBOARD_TREND_DATA = [
+    { month: 'Apr', inventoryValue: 120000 },
+    { month: 'May', inventoryValue: 135000 },
+    { month: 'Jun', inventoryValue: 128000 },
+    { month: 'Jul', inventoryValue: 152000 },
+    { month: 'Aug', inventoryValue: 145000 },
+    { month: 'Sep', inventoryValue: 148500 },
+  ];
+
+  const CATEGORY_DISTRIBUTION_DATA = [
+    { name: 'Sensors & IoT', value: 28, color: '#E8894E' },
+    { name: 'Actuators', value: 22, color: '#F4A576' },
+    { name: 'Controllers', value: 18, color: '#1E293B' },
+    { name: 'Pneumatics', value: 14, color: '#64748B' },
+    { name: 'Networking', value: 10, color: '#94A3B8' },
+    { name: 'Others', value: 8, color: '#CBD5E1' },
+  ];
+
+  const [facilities, setFacilities] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [filteredOps, setFilteredOps] = useState([]);
   const [loadingOps, setLoadingOps] = useState(false);
 

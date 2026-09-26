@@ -16,12 +16,12 @@ import {
 } from 'lucide-react';
 import DataTable from '../components/common/DataTable';
 import Modal from '../components/common/Modal';
-import { INITIAL_SUPPLIERS, INITIAL_PURCHASE_ORDERS } from '../data/mockData';
+
 import { hasPermission } from '../utils/permissions';
 
 export default function Suppliers({ onNotify, currentUser }) {
   const canManageSuppliers = hasPermission.canCreateReceipts(currentUser?.role);
-  const [suppliers, setSuppliers] = useState(INITIAL_SUPPLIERS);
+  const [suppliers, setSuppliers] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -317,7 +317,7 @@ export default function Suppliers({ onNotify, currentUser }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {INITIAL_PURCHASE_ORDERS.filter(po => po.supplier === selectedSupplier.name).map(po => (
+                    {[].filter(po => po.supplier === selectedSupplier.name).map(po => (
                       <tr key={po.id}>
                         <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{po.id}</td>
                         <td>{po.orderDate}</td>
