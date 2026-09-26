@@ -32,10 +32,11 @@ import { INITIAL_WAREHOUSES, INITIAL_PRODUCTS } from '../data/mockData';
 import { hasPermission } from '../utils/permissions';
 import { warehouseApi } from '../services/api';
 
-export default function Warehouses({ onNotify, currentUser }) {
+export default function Warehouses({ onNotify, currentUser, isLoading: externalLoading }) {
   const canManageWarehouses = hasPermission.canManageWarehouses(currentUser?.role);
   const [warehouses, setWarehouses] = useState(INITIAL_WAREHOUSES);
   const [isLoading, setIsLoading] = useState(false);
+  const isDataLoading = isLoading || Boolean(externalLoading);
   const [viewMode, setViewMode] = useState('grid');
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -412,8 +413,25 @@ export default function Warehouses({ onNotify, currentUser }) {
 
       {/* Grid View */}
       {viewMode === 'grid' ? (
-        <div className="grid-2">
-          {warehouses.map((wh) => {
+        isDataLoading ? (
+          <div className="grid-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="warehouse-card">
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                  <div className="skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-lg)' }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="skeleton skeleton-text" style={{ width: '45%', height: 18, marginBottom: 6 }} />
+                    <div className="skeleton skeleton-text" style={{ width: '30%', height: 12 }} />
+                  </div>
+                </div>
+                <div className="skeleton" style={{ height: 6, width: '100%', borderRadius: 3, marginBottom: 12 }} />
+                <div className="skeleton skeleton-text" style={{ width: '60%', height: 14 }} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid-2">
+            {warehouses.map((wh) => {
             const utilization = Math.round(((wh.usedCapacity || 0) / (wh.capacity || 15000)) * 100);
             return (
               <div
@@ -509,6 +527,7 @@ export default function Warehouses({ onNotify, currentUser }) {
             );
           })}
         </div>
+        )
       ) : (
         /* Table View */
         <div className="table-container">
@@ -526,7 +545,20 @@ export default function Warehouses({ onNotify, currentUser }) {
               </tr>
             </thead>
             <tbody>
-              {warehouses.map((wh) => (
+              {isDataLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton skeleton-text" style={{ width: '50%' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '65%' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '40%' }} /></td>
+                    <td><div className="skeleton" style={{ width: 60, height: 20, borderRadius: 10 }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '35%' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '40%' }} /></td>
+                    <td><div className="skeleton" style={{ width: 70, height: 20, borderRadius: 10 }} /></td>
+                    <td><div className="skeleton" style={{ width: 50, height: 24, borderRadius: 4 }} /></td>
+                  </tr>
+                ))
+              ) : warehouses.map((wh) => (
                 <tr
                   key={wh.id}
                   onClick={() => handleOpenDrawer(wh)}

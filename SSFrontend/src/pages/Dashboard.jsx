@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package,
@@ -16,7 +16,12 @@ import {
   Send,
   Boxes,
   ExternalLink,
-  Zap
+  Zap,
+  ArrowLeftRight,
+  SlidersHorizontal,
+  Layers,
+  Filter,
+  Search
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -28,21 +33,19 @@ import {
   CartesianGrid,
   PieChart,
   Pie,
-  Cell,
-  BarChart,
-  Bar,
-  Legend
+  Cell
 } from 'recharts';
 import KpiCard from '../components/common/KpiCard';
 import StatusBadge from '../components/common/StatusBadge';
 import {
   DASHBOARD_TREND_DATA,
   CATEGORY_DISTRIBUTION_DATA,
-  TOP_MOVING_PRODUCTS,
   INITIAL_PRODUCTS,
-  INITIAL_STOCK_MOVEMENTS
+  INITIAL_WAREHOUSES,
+  INITIAL_CATEGORIES
 } from '../data/mockData';
 import { hasPermission, normalizeRole, ROLES, ROLE_LABELS } from '../utils/permissions';
+import { dashboardApi, categoryApi, warehouseApi } from '../services/api';
 
 export default function Dashboard({ currentUser, onOpenQuickAction }) {
   const [dateRange, setDateRange] = useState('Last 30 Days');
@@ -51,10 +54,72 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
   const userRole = normalizeRole(currentUser?.role);
   const isStaff = userRole === ROLES.STAFF;
 
-  // Low stock products from initial products
-  const criticalItems = INITIAL_PRODUCTS.filter(
-    (p) => p.status === 'Low Stock' || p.status === 'Out of Stock'
-  );
+  // Live Metrics State (Module 9: 5 Core Operational KPIs)
+  const [metrics, setMetrics] = useState({
+    totalProductsInStock: 24,
+    lowStockCount: 3,
+    outOfStockCount: 1,
+    pendingReceipts: 4,
+    pendingDeliveries: 5,
+    internalTransfersScheduled: 2,
+    totalStockValue: 148500.00
+  });
+
+  // Dynamic Multi-Filters State (Module 9)
+  const [filters, setFilters] = useState({
+    docType: '',
+    status: '',
+    warehouseId: '',
+    categoryId: '',
+    search: ''
+  });
+
+  const [facilities, setFacilities] = useState(INITIAL_WAREHOUSES);
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [filteredOps, setFilteredOps] = useState([]);
+  const [loadingOps, setLoadingOps] = useState(false);
+
+  // Load KPI Metrics
+  const loadMetrics = useCallback(async () => {
+    try {
+      const res = await dashboardApi.getMetrics();
+      if (res?.data?.metrics) {
+        setMetrics(res.data.metrics);
+      }
+    } catch (e) {
+      console.warn('Live metrics load failed, using cache:', e);
+    }
+  }, []);
+
+  // Load Operations matching Dynamic Multi-Filters
+  const loadFilteredOperations = useCallback(async () => {
+    setLoadingOps(true);
+    try {
+      const res = await dashboardApi.getOperationsSummary(filters);
+      if (res?.data?.operations) {
+        setFilteredOps(res.data.operations);
+      }
+    } catch (e) {
+      console.warn('Operations summary load failed:', e);
+    } finally {
+      setLoadingOps(false);
+    }
+  }, [filters]);
+
+  // Initial metadata load
+  useEffect(() => {
+    loadMetrics();
+    loadFilteredOperations();
+
+    // Fetch facilities and categories for filter dropdowns
+    warehouseApi.getWarehouses().then(res => {
+      if (res?.data?.warehouses) setFacilities(res.data.warehouses);
+    }).catch(() => {});
+
+    categoryApi.getCategories().then(res => {
+      if (res?.data?.categories) setCategories(res.data.categories);
+    }).catch(() => {});
+  }, [loadMetrics, loadFilteredOperations]);
 
   return (
     <div className="dashboard-page animate-fade-in">
@@ -83,7 +148,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
           <div className="page-breadcrumbs">
             <span>Enterprise Console</span>
             <span className="breadcrumb-sep">/</span>
-            <span style={{ color: 'var(--color-neutral-800)', fontWeight: 600 }}>Dashboard</span>
+            <span style={{ color: 'var(--color-neutral-800)', fontWeight: 600 }}>Dashboard & KPIs</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h1 className="page-title" style={{ margin: 0 }}>
@@ -94,28 +159,24 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
             </span>
           </div>
           <p className="page-subtitle">
-            Here is your live inventory telemetry, replenishment pipeline, and fulfillment overview.
+            Live inventory telemetry, replenishment pipeline, and fulfillment overview (Module 9: 5 Core KPIs).
           </p>
         </div>
 
         {/* Date Filter & Actions */}
         <div className="page-header-actions">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-neutral-0)', padding: '4px 12px', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
-            <Calendar size={15} style={{ color: 'var(--color-primary-600)' }} />
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="form-select"
-              style={{ border: 'none', background: 'transparent', height: '32px', fontSize: 'var(--font-size-xs)', fontWeight: 500, paddingRight: '24px' }}
-              aria-label="Filter date range"
-            >
-              <option value="Today">Today (Realtime)</option>
-              <option value="Last 7 Days">Last 7 Days</option>
-              <option value="Last 30 Days">Last 30 Days</option>
-              <option value="This Quarter">Q3 2026 (Quarter)</option>
-              <option value="Year-to-Date">Year-to-Date (2026)</option>
-            </select>
-          </div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              loadMetrics();
+              loadFilteredOperations();
+            }}
+            title="Refresh KPIs"
+          >
+            <RefreshCw size={15} />
+            <span>Sync Telemetry</span>
+          </button>
 
           <button
             type="button"
@@ -128,65 +189,182 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
         </div>
       </div>
 
-      {/* 6 KPI Cards Grid */}
-      <div className="kpi-grid">
+      {/* Module 9: 5 Core Operational KPI Cards Grid */}
+      <div className="grid grid-cols-5 gap-4 mb-6">
+        {/* KPI 1: Total Products in Stock */}
         <KpiCard
-          title="Total Catalog Products"
-          value="324"
-          subtext="Across 8 categories"
+          title="1. Products in Stock"
+          value={`${metrics.totalProductsInStock} SKUs`}
+          subtext="Active catalog items"
           icon={Package}
-          trend="+12% MoM"
+          trend="In Stock"
           trendDirection="up"
           variant="primary"
+          onClick={() => navigate('/products')}
         />
+
+        {/* KPI 2: Low / Out of Stock Items */}
         <KpiCard
-          title="Total Inventory Value"
-          value="₹1,440,000"
-          subtext="FIFO Cost Method"
-          icon={IndianRupee}
-          trend="+5.4% YoY"
-          trendDirection="up"
-          variant="success"
-        />
-        <KpiCard
-          title="Low Stock Items"
-          value="8 SKUs"
-          subtext="Below threshold point"
+          title="2. Low / Out of Stock"
+          value={`${metrics.lowStockCount + metrics.outOfStockCount} Items`}
+          subtext={`${metrics.outOfStockCount} Critical Out-of-Stock`}
           icon={AlertTriangle}
-          trend="Action required"
-          trendDirection="down"
-          variant="warning"
+          trend={metrics.lowStockCount > 0 ? "Action Required" : "Optimal"}
+          trendDirection={metrics.lowStockCount > 0 ? "down" : "up"}
+          variant={metrics.lowStockCount > 0 ? "warning" : "success"}
+          onClick={() => navigate('/inventory')}
         />
+
+        {/* KPI 3: Pending Receipts */}
         <KpiCard
-          title="Out of Stock Items"
-          value="2 SKUs"
-          subtext="Zero active stock"
-          icon={XCircle}
-          trend="Critical"
-          trendDirection="down"
-          variant="danger"
-        />
-        <KpiCard
-          title="Pending Purchase Orders"
-          value="5 Orders"
-          subtext="₹54,650 Inbound value"
+          title="3. Pending Receipts"
+          value={`${metrics.pendingReceipts} Orders`}
+          subtext="Inbound goods awaiting receipt"
           icon={ShoppingCart}
-          trend="3 In Transit"
+          trend="Inbound Pipeline"
           trendDirection="up"
           variant="info"
+          onClick={() => navigate('/purchase-orders')}
         />
+
+        {/* KPI 4: Pending Deliveries */}
         <KpiCard
-          title="Monthly Dispatched Sales"
-          value="₹95,670"
-          subtext="98.2% On-time pick rate"
-          icon={TrendingUp}
-          trend="+18.4%"
+          title="4. Pending Deliveries"
+          value={`${metrics.pendingDeliveries} Shipments`}
+          subtext="Outbound customer orders"
+          icon={Truck}
+          trend="Pick / Pack Queue"
           trendDirection="up"
-          variant="success"
+          variant="warning"
+          onClick={() => navigate('/sales-orders')}
+        />
+
+        {/* KPI 5: Internal Transfers Scheduled */}
+        <KpiCard
+          title="5. Transfers Scheduled"
+          value={`${metrics.internalTransfersScheduled} Relocations`}
+          subtext="Inter-rack / hub balance"
+          icon={ArrowLeftRight}
+          trend="In Transit"
+          trendDirection="up"
+          variant="primary"
+          onClick={() => navigate('/inventory')}
         />
       </div>
 
-      
+      {/* Module 9: Dynamic Multi-Filter Toolbar */}
+      <div className="card mb-6" style={{ padding: '16px', background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <SlidersHorizontal size={17} style={{ color: 'var(--color-primary-600)' }} />
+            <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-neutral-900)' }}>
+              Dynamic Multi-Filter Operations Feed
+            </span>
+          </div>
+          <span style={{ fontSize: '12px', color: 'var(--color-neutral-500)' }}>
+            Showing live database operations matched across 4 filter dimensions
+          </span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          {/* Filter 1: Document Type */}
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-neutral-600)', display: 'block', marginBottom: '4px' }}>Document Type</label>
+            <select
+              className="form-select"
+              style={{ fontSize: '12px', height: '36px' }}
+              value={filters.docType}
+              onChange={(e) => setFilters({ ...filters, docType: e.target.value })}
+            >
+              <option value="">All Document Types</option>
+              <option value="RECEIPT">Incoming Receipts (PO)</option>
+              <option value="DELIVERY">Outgoing Deliveries (SO)</option>
+              <option value="INTERNAL">Internal Transfers (TRF)</option>
+              <option value="ADJUSTMENT">Stock Adjustments (ADJ)</option>
+            </select>
+          </div>
+
+          {/* Filter 2: Operation Status */}
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-neutral-600)', display: 'block', marginBottom: '4px' }}>Pipeline Status</label>
+            <select
+              className="form-select"
+              style={{ fontSize: '12px', height: '36px' }}
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            >
+              <option value="">All Statuses</option>
+              <option value="DRAFT">Draft / Waiting</option>
+              <option value="READY">Ready / Picked / Allocated</option>
+              <option value="PACKED">Packed Parcel</option>
+              <option value="DONE">Done / Dispatched / Received</option>
+              <option value="CANCELED">Canceled</option>
+            </select>
+          </div>
+
+          {/* Filter 3: Warehouse / Facility */}
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-neutral-600)', display: 'block', marginBottom: '4px' }}>Warehouse Facility</label>
+            <select
+              className="form-select"
+              style={{ fontSize: '12px', height: '36px' }}
+              value={filters.warehouseId}
+              onChange={(e) => setFilters({ ...filters, warehouseId: e.target.value })}
+            >
+              <option value="">All Facilities</option>
+              {facilities.map(f => (
+                <option key={f.id} value={f.name}>{f.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filter 4: Keyword Search */}
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-neutral-600)', display: 'block', marginBottom: '4px' }}>Search Reference / Partner</label>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '11px', color: 'var(--color-neutral-400)' }} />
+              <input
+                type="text"
+                className="form-input"
+                style={{ fontSize: '12px', height: '36px', paddingLeft: '30px' }}
+                placeholder="Search PO, SO, TRF, Client..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Live Filtered Operations Feed Table */}
+        {filteredOps.length > 0 && (
+          <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-neutral-200)', paddingTop: '12px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--color-neutral-500)', borderBottom: '1px solid var(--color-neutral-200)' }}>
+                  <th style={{ padding: '6px 8px' }}>Operation #</th>
+                  <th style={{ padding: '6px 8px' }}>Type</th>
+                  <th style={{ padding: '6px 8px' }}>Partner / Client</th>
+                  <th style={{ padding: '6px 8px' }}>Facility</th>
+                  <th style={{ padding: '6px 8px' }}>Demanded</th>
+                  <th style={{ padding: '6px 8px' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOps.slice(0, 5).map((op, idx) => (
+                  <tr key={op.id || idx} style={{ borderBottom: '1px solid var(--color-neutral-100)' }}>
+                    <td style={{ padding: '6px 8px', fontWeight: 700, fontFamily: 'monospace' }}>{op.operationNumber || op.operation_number}</td>
+                    <td style={{ padding: '6px 8px' }}><span className="badge badge-neutral">{op.type}</span></td>
+                    <td style={{ padding: '6px 8px' }}>{op.partnerName || 'Internal Warehouse'}</td>
+                    <td style={{ padding: '6px 8px' }}>{op.warehouseName}</td>
+                    <td style={{ padding: '6px 8px', fontWeight: 600 }}>{op.totalDemanded} units</td>
+                    <td style={{ padding: '6px 8px' }}><StatusBadge status={op.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Main Charts Grid */}
       <div className="charts-grid">
@@ -194,10 +372,10 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
         <div className="chart-card">
           <div className="chart-header">
             <div>
-              <h2 className="chart-title">Inventory Valuation & Velocity ($k)</h2>
+              <h2 className="chart-title">Inventory Valuation Trend (₹)</h2>
               <p className="card-subtitle">6-Month historical asset trend across hubs</p>
             </div>
-            <span className="badge badge-success">Live Trend</span>
+            <span className="badge badge-success">Live Valuation</span>
           </div>
           <div className="chart-body">
             <ResponsiveContainer width="100%" height="100%">
@@ -212,7 +390,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
                 <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
                 <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
                 <Tooltip
-                  formatter={(val) => [`₹${val}k`, 'Valuation']}
+                  formatter={(val) => [`₹${Number(val).toLocaleString()}`, 'Valuation']}
                   contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
                 />
                 <Area
@@ -260,202 +438,12 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value) => [`₹${value.toLocaleString()}`, 'Value']}
+                  formatter={(value) => [`${value}%`, 'Share']}
                   contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={36}
-                  formatter={(value) => <span style={{ color: '#374151', fontSize: '11px' }}>{value}</span>}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
-      </div>
-
-      {/* Second Row: Top-Moving Products Bar Chart + Critical Low Stock Alerts Table */}
-      <div className="grid-2 mb-6">
-        {/* Top-Moving Products Bar Chart */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <div>
-              <h2 className="chart-title">Top 5 Moving Products (30 Days)</h2>
-              <p className="card-subtitle">Fastest turn items measured by shipped units</p>
-            </div>
-            <span className="badge badge-primary">High Velocity</span>
-          </div>
-          <div className="chart-body">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={TOP_MOVING_PRODUCTS}
-                layout="vertical"
-                margin={{ top: 10, right: 30, left: 40, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                <XAxis type="number" tick={{ fill: '#6B7280', fontSize: 12 }} />
-                <YAxis dataKey="name" type="category" tick={{ fill: '#4B5563', fontSize: 11 }} width={120} />
-                <Tooltip
-                  formatter={(val, name) => [val, name === 'volume' ? 'Units Dispatched' : name]}
-                  contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
-                />
-                <Bar dataKey="volume" fill="#F4A576" radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Low Stock Alerts & Immediate Reorder Panel */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="card-header">
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertTriangle size={18} style={{ color: 'var(--color-warning-600)' }} />
-                <h2 className="card-title">Critical Stock Replenishment Alerts</h2>
-              </div>
-              <p className="card-subtitle">Items at or below designated safety thresholds</p>
-            </div>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => navigate('/products')}
-            >
-              All Inventory
-            </button>
-          </div>
-
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Warehouse</th>
-                  <th>Stock / Min</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {criticalItems.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="table-product-cell">
-                        <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: 'var(--color-neutral-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-600)', flexShrink: 0 }}>
-                          <Package size={15} />
-                        </div>
-                        <div>
-                          <div className="table-product-name">{item.name}</div>
-                          <div className="table-product-sku">{item.sku}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-600)' }}>
-                      {item.warehouse}
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 700, color: item.availableQty === 0 ? 'var(--color-danger-600)' : 'var(--color-warning-600)' }}>
-                        {item.availableQty}
-                      </span>
-                      <span style={{ color: 'var(--color-neutral-400)', fontSize: 'var(--font-size-xs)' }}>
-                        {' '}/ {item.reorderLevel} {item.unit}
-                      </span>
-                    </td>
-                    <td>
-                      <StatusBadge status={item.status} size="sm" />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-xs"
-                        onClick={() => onOpenQuickAction('po')}
-                        title="Draft PO for this product"
-                      >
-                        Reorder
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Stock Movements Ledger Preview */}
-      <div className="card">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title">Recent Stock Audit Transactions</h2>
-            <p className="card-subtitle">Verified system movements across all active warehouse locations</p>
-          </div>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => navigate('/movements')}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-          >
-            <span>Complete Audit Log</span>
-            <ArrowRight size={15} />
-          </button>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date & Time</th>
-                <th>Type</th>
-                <th>Product & SKU</th>
-                <th>Quantity</th>
-                <th>Source → Destination</th>
-                <th>Ref ID</th>
-                <th>Operator</th>
-              </tr>
-            </thead>
-            <tbody>
-              {INITIAL_STOCK_MOVEMENTS.slice(0, 5).map((mov) => (
-                <tr key={mov.id}>
-                  <td style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-500)', whiteSpace: 'nowrap' }}>
-                    {mov.date}
-                  </td>
-                  <td>
-                    <StatusBadge status={mov.type} type="movement" size="sm" />
-                  </td>
-                  <td>
-                    <div className="font-medium" style={{ color: 'var(--color-neutral-800)' }}>
-                      {mov.product}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-neutral-400)' }}>
-                      {mov.sku}
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        color: mov.qty > 0 ? 'var(--color-success-600)' : 'var(--color-danger-600)'
-                      }}
-                    >
-                      {mov.qty > 0 ? `+${mov.qty}` : mov.qty}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-600)' }}>
-                    <span>{mov.source}</span>
-                    <span style={{ margin: '0 4px', color: 'var(--color-neutral-400)' }}>→</span>
-                    <span>{mov.destination}</span>
-                  </td>
-                  <td>
-                    <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace', background: 'var(--color-neutral-100)', padding: '2px 6px', borderRadius: '4px' }}>
-                      {mov.reference}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-600)' }}>
-                    {mov.user}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

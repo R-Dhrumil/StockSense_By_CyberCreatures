@@ -317,6 +317,44 @@ export const operationApi = {
     return await api.post(`/operations/deliveries/${id}/cancel`, {});
   },
 
+  // Operation 3: Internal Transfers (Inter-Rack / Inter-Hub)
+  getTransfers: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/transfers?${queryStr}` : '/operations/transfers';
+    return await api.get(endpoint);
+  },
+
+  getTransferById: async (id) => {
+    return await api.get(`/operations/transfers/${id}`);
+  },
+
+  createTransfer: async (transferData) => {
+    return await api.post('/operations/transfers', transferData);
+  },
+
+  validateTransfer: async (id) => {
+    return await api.post(`/operations/transfers/${id}/validate`, {});
+  },
+
+  cancelTransfer: async (id) => {
+    return await api.post(`/operations/transfers/${id}/cancel`, {});
+  },
+
+  // Operation 4: Stock Adjustments (Physical Cycle Counts & Discrepancies)
+  getAdjustments: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/operations/adjustments?${queryStr}` : '/operations/adjustments';
+    return await api.get(endpoint);
+  },
+
+  createAdjustment: async (adjustmentData) => {
+    return await api.post('/operations/adjustments', adjustmentData);
+  },
+
   // Audit Ledger
   getStockLedger: async (params = {}) => {
     const queryStr = new URLSearchParams(
@@ -327,6 +365,39 @@ export const operationApi = {
   },
 };
 
+// Stock Ledger Service Endpoints
+export const ledgerApi = {
+  getLedger: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/ledger?${queryStr}` : '/ledger';
+    return await api.get(endpoint);
+  },
+
+  exportLedgerUrl: () => {
+    const envUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    return `${envUrl}/ledger/export`;
+  }
+};
+
+// Dashboard Metrics & Dynamic Multi-Filter Service Endpoints
+export const dashboardApi = {
+  getMetrics: async () => {
+    return await api.get('/dashboard/metrics');
+  },
+
+  getOperationsSummary: async (params = {}) => {
+    const queryStr = new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    const endpoint = queryStr ? `/dashboard/operations-summary?${queryStr}` : '/dashboard/operations-summary';
+    return await api.get(endpoint);
+  }
+};
+
 export default api;
+
+
 
 

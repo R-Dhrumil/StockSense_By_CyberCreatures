@@ -10,12 +10,12 @@ export default defineConfig({
     cors: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5000',
+        target: 'http://127.0.0.1:5002',
         changeOrigin: true,
         secure: false,
       },
       '/socket.io': {
-        target: 'ws://127.0.0.1:5000',
+        target: 'ws://127.0.0.1:5002',
         ws: true,
       },
     },

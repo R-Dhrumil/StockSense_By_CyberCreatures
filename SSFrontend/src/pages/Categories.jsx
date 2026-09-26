@@ -276,8 +276,26 @@ export default function Categories({ onNotify, currentUser }) {
 
       {/* Cards Grid View */}
       {viewMode === 'grid' ? (
-        <div className="grid-3">
-          {filteredCategories.map((cat) => (
+        isLoading ? (
+          <div className="grid-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div className="skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-lg)' }} />
+                  <div className="skeleton" style={{ width: 60, height: 20, borderRadius: 10 }} />
+                </div>
+                <div className="skeleton skeleton-text" style={{ width: '60%', height: 18, marginBottom: 8 }} />
+                <div className="skeleton skeleton-text" style={{ width: '90%', height: 12, marginBottom: 16 }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--color-neutral-100)', paddingTop: 12 }}>
+                  <div className="skeleton skeleton-text" style={{ width: 50, height: 14 }} />
+                  <div className="skeleton skeleton-text" style={{ width: 70, height: 14 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid-3">
+            {filteredCategories.map((cat) => (
             <div key={cat.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -309,13 +327,13 @@ export default function Categories({ onNotify, currentUser }) {
                   <div>
                     <span style={{ fontSize: '10px', color: 'var(--color-neutral-400)', textTransform: 'uppercase' }}>Products</span>
                     <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--color-neutral-800)' }}>
-                      {cat.count} SKUs
+                      {cat.count || 0} SKUs
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '10px', color: 'var(--color-neutral-400)', textTransform: 'uppercase' }}>Valuation</span>
                     <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--color-primary-700)' }}>
-                      ₹{cat.stockValue.toLocaleString()}
+                      ₹{(parseFloat(cat.stockValue) || 0).toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -348,6 +366,7 @@ export default function Categories({ onNotify, currentUser }) {
             </div>
           ))}
         </div>
+        )
       ) : (
         /* Table View */
         <div className="table-container">
@@ -363,7 +382,18 @@ export default function Categories({ onNotify, currentUser }) {
               </tr>
             </thead>
             <tbody>
-              {filteredCategories.map((cat) => (
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton skeleton-text" style={{ width: '50%' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '75%' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '30%' }} /></td>
+                    <td><div className="skeleton skeleton-text" style={{ width: '40%' }} /></td>
+                    <td><div className="skeleton" style={{ width: 60, height: 20, borderRadius: 10 }} /></td>
+                    <td><div className="skeleton" style={{ width: 40, height: 24, borderRadius: 4 }} /></td>
+                  </tr>
+                ))
+              ) : filteredCategories.map((cat) => (
                 <tr key={cat.id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -377,11 +407,11 @@ export default function Categories({ onNotify, currentUser }) {
                     {cat.description}
                   </td>
                   <td>
-                    <span style={{ fontWeight: 700 }}>{cat.count}</span> SKUs
+                    <span style={{ fontWeight: 700 }}>{cat.count || 0}</span> SKUs
                   </td>
                   <td>
                     <span style={{ fontWeight: 700, color: 'var(--color-primary-700)' }}>
-                      ₹{cat.stockValue.toLocaleString()}
+                      ₹{(parseFloat(cat.stockValue) || 0).toLocaleString()}
                     </span>
                   </td>
                   <td>

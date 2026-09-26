@@ -60,7 +60,7 @@ const renderProductIcon = (iconKey) => {
   return <Comp size={16} />;
 };
 
-export default function Products({ products, setProducts, onNotify, warehouses = INITIAL_WAREHOUSES, currentUser }) {
+export default function Products({ products, setProducts, onNotify, warehouses = INITIAL_WAREHOUSES, currentUser, isLoading: externalLoading }) {
   const facilityList = (warehouses && warehouses.length > 0) ? warehouses : INITIAL_WAREHOUSES;
   const canManageProducts = hasPermission.canManageProducts(currentUser?.role);
   const location = useLocation();
@@ -545,6 +545,7 @@ export default function Products({ products, setProducts, onNotify, warehouses =
         onSelectAll={handleSelectAll}
         onSelectRow={handleSelectRow}
         onRowClick={(row) => setViewProductModal(row)}
+        isLoading={isApiLoading || Boolean(externalLoading)}
       />
 
       {/* Add / Edit Product Drawer */}
