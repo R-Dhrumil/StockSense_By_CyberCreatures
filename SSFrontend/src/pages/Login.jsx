@@ -42,10 +42,11 @@ export default function Login({ onLoginSuccess }) {
 
   // Forgot Password / OTP Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const [otpStep, setOtpStep] = useState(1); // 1: Enter Email, 2: Enter OTP & New Password, 3: Success
+  const [otpStep, setOtpStep] = useState(1); // 1: Enter Email, 2: Verify OTP Only, 3: Set New Password, 4: Success
   const [resetEmail, setResetEmail] = useState('');
   const [resetOtp, setResetOtp] = useState('');
   const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState('');
 
@@ -161,25 +162,45 @@ export default function Login({ onLoginSuccess }) {
     }
   };
 
-  // OTP Step 2: Verify OTP & Reset Password
+  // OTP Step 2: Pre-verify the OTP code first before revealing password fields
+  const handleVerifyOtpCode = async (e) => {
+    e.preventDefault();
+    setResetError('');
+    if (!resetOtp || resetOtp.trim().length !== 6) {
+      setResetError('Please enter the complete 6-digit verification code.');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      await authApi.checkOtp(resetEmail, resetOtp.trim());
+      setOtpStep(3); // Advance to set new password step ONLY after OTP is confirmed!
+    } catch (err) {
+      setResetError(err.message || 'Invalid or expired OTP code. Please verify and try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // OTP Step 3: Set and Confirm New Password
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setResetError('');
-    if (!resetOtp || resetOtp.length < 4) {
-      setResetError('Please enter the 6-digit OTP sent to your email.');
-      return;
-    }
     if (!resetNewPassword || resetNewPassword.length < 6) {
       setResetError('New password must be at least 6 characters long.');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      setResetError('Passwords do not match. Please re-enter.');
       return;
     }
 
     setResetLoading(true);
     try {
       await authApi.resetPassword(resetEmail, resetOtp.trim(), resetNewPassword);
-      setOtpStep(3);
+      setOtpStep(4);
     } catch (err) {
-      setResetError(err.message || 'Invalid or expired OTP. Please try again.');
+      setResetError(err.message || 'Failed to update password. Please try again.');
     } finally {
       setResetLoading(false);
     }
@@ -190,6 +211,7 @@ export default function Login({ onLoginSuccess }) {
     setOtpStep(1);
     setResetOtp('');
     setResetNewPassword('');
+    setResetConfirmPassword('');
     setResetError('');
   };
 
@@ -574,12 +596,13 @@ export default function Login({ onLoginSuccess }) {
                 </form>
               )}
 
+              {/* Step 2: Input and verify OTP code ONLY */}
               {otpStep === 2 && (
-                <form onSubmit={handleResetPassword}>
+                <form onSubmit={handleVerifyOtpCode}>
                   <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-600)', marginBottom: '16px' }}>
-                    A 6-digit OTP code was sent to <strong>{resetEmail}</strong>. Enter it below along with your new password.
+                    A 6-digit one-time code was sent to <strong>{resetEmail}</strong>. Please enter the code below to verify your identity.
                   </p>
-                  <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <div className="form-group" style={{ marginBottom: '18px' }}>
                     <label className="form-label">6-Digit Verification Code</label>
                     <input
                       type="text"
@@ -588,20 +611,9 @@ export default function Login({ onLoginSuccess }) {
                       maxLength={6}
                       value={resetOtp}
                       onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, ''))}
-                      style={{ letterSpacing: '6px', textAlign: 'center', fontWeight: 700, fontSize: '18px' }}
+                      style={{ letterSpacing: '6px', textAlign: 'center', fontWeight: 700, fontSize: '20px', height: '48px' }}
                       required
                       autoFocus
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">New Password (min 6 characters)</label>
-                    <input
-                      type="password"
-                      className="form-input"
-                      placeholder="Enter new password"
-                      value={resetNewPassword}
-                      onChange={(e) => setResetNewPassword(e.target.value)}
-                      required
                     />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
@@ -617,26 +629,74 @@ export default function Login({ onLoginSuccess }) {
                       <button type="button" className="btn btn-secondary" onClick={closeResetModal}>
                         Cancel
                       </button>
-                      <button type="submit" className="btn btn-primary" disabled={resetLoading}>
-                        {resetLoading ? 'Resetting...' : 'Confirm Reset'}
+                      <button type="submit" className="btn btn-primary" disabled={resetLoading || resetOtp.length !== 6}>
+                        {resetLoading ? 'Verifying Code...' : 'Verify OTP Code'}
                       </button>
                     </div>
                   </div>
                 </form>
               )}
 
+              {/* Step 3: Enter and Confirm New Password (ONLY after OTP verified) */}
               {otpStep === 3 && (
+                <form onSubmit={handleResetPassword}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-success-50)', color: 'var(--color-success-700)', padding: '8px 12px', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-xs)', fontWeight: 600, marginBottom: '16px' }}>
+                    <CheckCircle2 size={16} />
+                    <span>OTP Verified! Enter your new password below.</span>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '14px' }}>
+                    <label className="form-label">New Password (min. 6 characters)</label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      placeholder="Enter new password"
+                      value={resetNewPassword}
+                      onChange={(e) => setResetNewPassword(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '14px' }}>
+                    <label className="form-label">Confirm New Password</label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      placeholder="Re-enter new password"
+                      value={resetConfirmPassword}
+                      onChange={(e) => setResetConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+                    <button type="button" className="btn btn-secondary" onClick={closeResetModal}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-primary" disabled={resetLoading}>
+                      {resetLoading ? 'Updating Password...' : 'Save & Update Password'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Step 4: Success Confirmation */}
+              {otpStep === 4 && (
                 <div style={{ textAlign: 'center', padding: '16px 0' }}>
                   <CheckCircle2 size={48} style={{ color: 'var(--color-success-500)', margin: '0 auto 12px' }} />
                   <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>Password Reset Complete!</h4>
                   <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)', marginTop: '6px', marginBottom: '20px' }}>
-                    Your credentials have been securely updated. You may now sign in.
+                    Your credentials have been securely updated. You can now sign in with your new password.
                   </p>
                   <button
                     type="button"
                     className="btn btn-primary"
                     style={{ width: '100%' }}
-                    onClick={closeResetModal}
+                    onClick={() => {
+                      setSignInEmail(resetEmail);
+                      closeResetModal();
+                    }}
                   >
                     Back to Sign In
                   </button>

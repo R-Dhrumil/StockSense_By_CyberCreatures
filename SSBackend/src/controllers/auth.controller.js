@@ -195,6 +195,26 @@ export const getMe = catchAsync(async (req, res) => {
 });
 
 /**
+ * Pre-validate 6-digit OTP code before setting new password
+ */
+export const checkOtp = catchAsync(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    throw new ApiError(400, 'Email and OTP verification code are required');
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+  const otpRecord = await Otp.findValid({ email: cleanEmail, otp });
+
+  if (!otpRecord) {
+    throw new ApiError(400, 'Invalid or expired OTP verification code');
+  }
+
+  return ApiResponse.send(res, 200, { verified: true }, 'OTP verified successfully');
+});
+
+/**
  * Reset Password using OTP
  */
 export const resetPassword = catchAsync(async (req, res) => {

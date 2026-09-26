@@ -143,6 +143,10 @@ export const authApi = {
     return await api.post('/auth/send-otp', { email, name });
   },
 
+  checkOtp: async (email, otp) => {
+    return await api.post('/auth/check-otp', { email, otp });
+  },
+
   verifyOtp: async (email, otp, name) => {
     const res = await api.post('/auth/verify-otp', { email, otp, name });
     if (res?.data?.token) {
