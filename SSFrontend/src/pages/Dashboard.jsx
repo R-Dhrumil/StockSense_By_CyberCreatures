@@ -171,9 +171,6 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
               {ROLE_LABELS[userRole]}
             </span>
           </div>
-          <p className="page-subtitle">
-            Live inventory telemetry, replenishment pipeline, and fulfillment overview (Module 9: 5 Core KPIs).
-          </p>
         </div>
 
         {/* Date Filter & Actions */}
