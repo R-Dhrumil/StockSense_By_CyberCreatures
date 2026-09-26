@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Settings as SettingsIcon,
   Building,
-  DollarSign,
+  IndianRupee,
   Scale,
   Barcode,
   Bell,
@@ -29,7 +29,7 @@ export default function Settings({ onNotify }) {
 
   // Financial & Tax State
   const [financials, setFinancials] = useState({
-    currency: 'USD ($)',
+    currency: 'INR (₹)',
     valuationMethod: 'FIFO (First-In, First-Out)',
     defaultTaxRate: 8.5,
     pricesIncludeTax: false,
@@ -260,8 +260,8 @@ export default function Settings({ onNotify }) {
               value={financials.currency}
               onChange={(e) => setFinancials({ ...financials, currency: e.target.value })}
             >
-              <option value="USD ($)">USD — United States Dollar ($)</option>
               <option value="INR (₹)">INR — Indian Rupee (₹)</option>
+              <option value="USD ($)">USD — United States Dollar ($)</option>
               <option value="EUR (€)">EUR — Eurozone (€)</option>
               <option value="GBP (£)">GBP — British Pound (£)</option>
               <option value="CAD ($)">CAD — Canadian Dollar ($)</option>

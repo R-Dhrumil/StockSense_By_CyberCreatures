@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
@@ -22,7 +22,7 @@ import UsersManagement from './pages/UsersManagement';
 import Settings from './pages/Settings';
 
 import { INITIAL_PRODUCTS, DEFAULT_NOTIFICATIONS } from './data/mockData';
-import { api, authApi } from './services/api';
+import { api, authApi, productApi } from './services/api';
 import './App.css';
 
 export default function App() {
@@ -46,6 +46,30 @@ export default function App() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
+
+  // Fetch live products on startup to ensure accurate stock alerts across all components
+  useEffect(() => {
+    if (isAuthenticated) {
+      productApi.getProducts()
+        .then(res => {
+          if (res?.data?.products && res.data.products.length > 0) {
+            setProducts(res.data.products);
+          }
+        })
+        .catch(err => {
+          console.warn('Initial products fetch in App fallback:', err.message);
+        });
+    }
+  }, [isAuthenticated]);
+
+  // Dynamic live low stock count
+  const lowStockCount = useMemo(() => {
+    return products.filter(p => 
+      p.status === 'Low Stock' || 
+      p.status === 'Out of Stock' || 
+      (Number(p.availableQty ?? 0) <= Number(p.reorderLevel ?? 0))
+    ).length;
+  }, [products]);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,18 +115,15 @@ export default function App() {
 
   // Quick Action Handler from Topbar / Dashboard
   const handleQuickAction = (type) => {
+    const ts = Date.now();
     if (type === 'product') {
-      navigate('/products');
-      addToast('Quick Action', 'Navigated to Products. Click "Add New Product" to launch drawer.', 'info');
+      navigate('/products', { state: { openModal: 'product', ts } });
     } else if (type === 'adjustment') {
-      navigate('/inventory');
-      addToast('Quick Action', 'Navigated to Inventory. Open Guided Stock Adjustment.', 'info');
+      navigate('/inventory', { state: { openModal: 'adjustment', ts } });
     } else if (type === 'po') {
-      navigate('/purchase-orders');
-      addToast('Quick Action', 'Navigated to Purchase Orders. Open PO Creation Flow.', 'info');
+      navigate('/purchase-orders', { state: { openModal: 'po', ts } });
     } else if (type === 'so') {
-      navigate('/sales-orders');
-      addToast('Quick Action', 'Navigated to Sales Orders. Open Order Creation Flow.', 'info');
+      navigate('/sales-orders', { state: { openModal: 'so', ts } });
     }
   };
 
@@ -144,6 +165,7 @@ export default function App() {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         mobileOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
+        lowStockCount={lowStockCount}
       />
 
       {/* Main Content Layout Wrapper */}

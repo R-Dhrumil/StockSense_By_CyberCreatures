@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package,
-  DollarSign,
+  IndianRupee,
   AlertTriangle,
   XCircle,
   ShoppingCart,
@@ -113,9 +113,9 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
         />
         <KpiCard
           title="Total Inventory Value"
-          value="$1,440,000"
+          value="₹1,440,000"
           subtext="FIFO Cost Method"
-          icon={DollarSign}
+          icon={IndianRupee}
           trend="+5.4% YoY"
           trendDirection="up"
           variant="success"
@@ -141,7 +141,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
         <KpiCard
           title="Pending Purchase Orders"
           value="5 Orders"
-          subtext="$54,650 Inbound value"
+          subtext="₹54,650 Inbound value"
           icon={ShoppingCart}
           trend="3 In Transit"
           trendDirection="up"
@@ -149,7 +149,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
         />
         <KpiCard
           title="Monthly Dispatched Sales"
-          value="$95,670"
+          value="₹95,670"
           subtext="98.2% On-time pick rate"
           icon={TrendingUp}
           trend="+18.4%"
@@ -237,7 +237,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
                 <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
                 <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
                 <Tooltip
-                  formatter={(val) => [`$${val}k`, 'Valuation']}
+                  formatter={(val) => [`₹${val}k`, 'Valuation']}
                   contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
                 />
                 <Area
@@ -285,7 +285,7 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value) => [`$${value.toLocaleString()}`, 'Value']}
+                  formatter={(value) => [`₹${value.toLocaleString()}`, 'Value']}
                   contentStyle={{ backgroundColor: '#1F2937', color: '#fff', borderRadius: '8px', border: 'none' }}
                 />
                 <Legend
@@ -365,7 +365,9 @@ export default function Dashboard({ currentUser, onOpenQuickAction }) {
                   <tr key={item.id}>
                     <td>
                       <div className="table-product-cell">
-                        <span style={{ fontSize: '20px' }}>{item.image}</span>
+                        <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: 'var(--color-neutral-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-600)', flexShrink: 0 }}>
+                          <Package size={15} />
+                        </div>
                         <div>
                           <div className="table-product-name">{item.name}</div>
                           <div className="table-product-sku">{item.sku}</div>

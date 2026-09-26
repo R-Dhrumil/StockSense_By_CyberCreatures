@@ -7,7 +7,7 @@ import {
   Mail,
   MapPin,
   Clock,
-  DollarSign,
+  IndianRupee,
   Package,
   Edit2,
   ExternalLink,
@@ -311,7 +311,7 @@ export default function Suppliers({ onNotify }) {
                       <tr key={po.id}>
                         <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{po.id}</td>
                         <td>{po.orderDate}</td>
-                        <td style={{ fontWeight: 600 }}>${po.totalAmount.toLocaleString()}</td>
+                        <td style={{ fontWeight: 600 }}>₹{po.totalAmount.toLocaleString()}</td>
                         <td>{po.status}</td>
                       </tr>
                     ))}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Layers,
   Plus,
@@ -8,12 +8,13 @@ import {
   Archive,
   RotateCcw,
   Package,
-  DollarSign,
+  IndianRupee,
   Search
 } from 'lucide-react';
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
 import { INITIAL_CATEGORIES } from '../data/mockData';
+import { categoryApi } from '../services/api';
 
 export default function Categories({ onNotify }) {
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
@@ -22,6 +23,7 @@ export default function Categories({ onNotify }) {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -30,6 +32,25 @@ export default function Categories({ onNotify }) {
     icon: 'Layers'
   });
 
+  // Fetch categories on mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true);
+      const res = await categoryApi.getCategories();
+      if (res?.data?.categories && res.data.categories.length > 0) {
+        setCategories(res.data.categories);
+      }
+    } catch (err) {
+      console.warn('Backend categories fallback to cached list:', err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredCategories = categories.filter((cat) => {
     const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           cat.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -37,13 +58,13 @@ export default function Categories({ onNotify }) {
     return matchesSearch && matchesStatus;
   });
 
-  const totalProducts = categories.reduce((acc, c) => acc + c.count, 0);
-  const totalValuation = categories.reduce((acc, c) => acc + c.stockValue, 0);
+  const totalProducts = categories.reduce((acc, c) => acc + (parseInt(c.count, 10) || 0), 0);
+  const totalValuation = categories.reduce((acc, c) => acc + (parseFloat(c.stockValue) || 0), 0);
 
   const handleOpenCreate = () => {
     setModalMode('create');
     setFormData({
-      id: `CAT-${Date.now().toString().slice(-3)}`,
+      id: '',
       name: '',
       description: '',
       status: 'Active',
@@ -58,33 +79,48 @@ export default function Categories({ onNotify }) {
     setIsModalOpen(true);
   };
 
-  const handleToggleArchive = (cat) => {
+  const handleToggleArchive = async (cat) => {
     const newStatus = cat.status === 'Active' ? 'Archived' : 'Active';
-    setCategories(categories.map(c => c.id === cat.id ? { ...c, status: newStatus } : c));
-    onNotify(
-      newStatus === 'Archived' ? 'Category Archived' : 'Category Restored',
-      `${cat.name} marked as ${newStatus}.`,
-      newStatus === 'Archived' ? 'warning' : 'success'
-    );
+    try {
+      await categoryApi.updateCategory(cat.id, { status: newStatus });
+      setCategories(categories.map(c => c.id === cat.id ? { ...c, status: newStatus } : c));
+      onNotify(
+        newStatus === 'Archived' ? 'Category Archived' : 'Category Restored',
+        `${cat.name} marked as ${newStatus}.`,
+        newStatus === 'Archived' ? 'warning' : 'success'
+      );
+    } catch (err) {
+      // Fallback
+      setCategories(categories.map(c => c.id === cat.id ? { ...c, status: newStatus } : c));
+      onNotify('Status Updated', `${cat.name} marked as ${newStatus}.`, 'info');
+    }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.name) return;
 
-    if (modalMode === 'create') {
-      const newCat = {
-        ...formData,
-        count: 0,
-        stockValue: 0
-      };
-      setCategories([...categories, newCat]);
-      onNotify('Category Created', `New category ${newCat.name} created.`, 'success');
-    } else {
-      setCategories(categories.map(c => c.id === formData.id ? { ...c, ...formData } : c));
-      onNotify('Category Updated', `Updated details for ${formData.name}.`, 'info');
+    try {
+      if (modalMode === 'create') {
+        const res = await categoryApi.createCategory(formData);
+        const newCat = res?.data?.category || {
+          ...formData,
+          id: `CAT-${Date.now().toString().slice(-3)}`,
+          count: 0,
+          stockValue: 0
+        };
+        setCategories([...categories, newCat]);
+        onNotify('Category Created', `New category ${newCat.name} saved to database.`, 'success');
+      } else {
+        const res = await categoryApi.updateCategory(formData.id, formData);
+        const updated = res?.data?.category || formData;
+        setCategories(categories.map(c => c.id === formData.id ? { ...c, ...updated } : c));
+        onNotify('Category Updated', `Updated details for ${formData.name}.`, 'info');
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      alert(err.message || 'Error saving category');
     }
-    setIsModalOpen(false);
   };
 
   return (
@@ -147,11 +183,11 @@ export default function Categories({ onNotify }) {
 
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="kpi-icon success">
-            <DollarSign size={22} />
+            <IndianRupee size={22} />
           </div>
           <div>
             <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-              ${totalValuation.toLocaleString()}
+              ₹{totalValuation.toLocaleString()}
             </div>
             <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)' }}>
               Cumulative Stock Value
@@ -252,7 +288,7 @@ export default function Categories({ onNotify }) {
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '10px', color: 'var(--color-neutral-400)', textTransform: 'uppercase' }}>Valuation</span>
                     <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--color-primary-700)' }}>
-                      ${cat.stockValue.toLocaleString()}
+                      ₹{cat.stockValue.toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -312,7 +348,7 @@ export default function Categories({ onNotify }) {
                   </td>
                   <td>
                     <span style={{ fontWeight: 700, color: 'var(--color-primary-700)' }}>
-                      ${cat.stockValue.toLocaleString()}
+                      ₹{cat.stockValue.toLocaleString()}
                     </span>
                   </td>
                   <td>

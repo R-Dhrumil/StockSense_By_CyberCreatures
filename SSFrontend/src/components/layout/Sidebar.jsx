@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
@@ -29,7 +29,7 @@ const NAV_GROUPS = [
   {
     title: 'Inventory & Catalog',
     items: [
-      { name: 'Products', path: '/products', icon: Package, badge: '2 Low' },
+      { name: 'Products', path: '/products', icon: Package },
       { name: 'Categories', path: '/categories', icon: Layers },
       { name: 'Inventory', path: '/inventory', icon: Boxes },
       { name: 'Stock Movements', path: '/movements', icon: ArrowLeftRight }
@@ -58,8 +58,10 @@ export default function Sidebar({
   collapsed,
   onToggleCollapse,
   mobileOpen,
-  onCloseMobile
+  onCloseMobile,
+  lowStockCount = 0
 }) {
+  const navigate = useNavigate();
   return (
     <>
       {/* Mobile overlay */}
@@ -105,6 +107,10 @@ export default function Sidebar({
               <div className="sidebar-group-title">{group.title}</div>
               {group.items.map((item) => {
                 const Icon = item.icon;
+                const dynamicBadge = (item.path === '/products' && lowStockCount > 0)
+                  ? `${lowStockCount} Low`
+                  : item.badge;
+
                 return (
                   <NavLink
                     key={item.path}
@@ -115,9 +121,20 @@ export default function Sidebar({
                   >
                     <Icon size={19} className="nav-item-icon" />
                     <span className="nav-item-text">{item.name}</span>
-                    {item.badge && !collapsed && (
-                      <span className="nav-item-badge">
-                        {item.badge}
+                    {dynamicBadge && !collapsed && (
+                      <span
+                        className="nav-item-badge"
+                        title={`Click to view ${dynamicBadge} items`}
+                        onClick={(e) => {
+                          if (item.path === '/products') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigate('/products', { state: { filterStatus: 'low', ts: Date.now() } });
+                            if (onCloseMobile) onCloseMobile();
+                          }
+                        }}
+                      >
+                        {dynamicBadge}
                       </span>
                     )}
                   </NavLink>

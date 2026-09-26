@@ -7,7 +7,7 @@ import {
   Phone,
   Mail,
   Box,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   LayoutGrid,
   List,
@@ -342,11 +342,11 @@ export default function Warehouses({ onNotify }) {
 
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="kpi-icon success">
-            <DollarSign size={22} />
+            <IndianRupee size={22} />
           </div>
           <div>
             <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-              ${totalNetworkValue.toLocaleString()}
+              ₹{totalNetworkValue.toLocaleString()}
             </div>
             <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)' }}>
               Total Stored Asset Value
